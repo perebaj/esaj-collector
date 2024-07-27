@@ -1,0 +1,11 @@
+linters:
+  enable:
+      - revive
+      - gofmt
+      - errcheck
+      - gosimple
+      - ineffassign
+      - staticcheck
+      - unused
+issues:
+  exclude-use-default: false
