@@ -1,0 +1,16 @@
+name: CI-esaj
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+
+    name: Test and Lint
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: 1.22.2
+        check-latest: true
+    - run: make lint && make test
