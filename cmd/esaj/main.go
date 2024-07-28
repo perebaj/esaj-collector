@@ -2,6 +2,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -178,4 +179,83 @@ func main() {
 	}
 
 	slog.Info(fmt.Sprintf("pastaDigitalLink: %s", pastaDigitalURL))
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", pastaDigitalURL, nil)
+	if err != nil {
+		slog.Error("error creating request: %v", "error", err)
+		os.Exit(1)
+	}
+
+	req.Header.Set("Cookie", jsession)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		slog.Error("error doing request: %v", "error", err)
+		os.Exit(1)
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	bodyByte, err := io.ReadAll(resp.Body)
+	if err != nil {
+		slog.Error("error reading body: %v", "error", err)
+		os.Exit(1)
+	}
+
+	err = os.WriteFile("pasta_digital.html", bodyByte, 0644)
+	if err != nil {
+		slog.Error("error writing file: %v", "error", err)
+		os.Exit(1)
+	}
+
+	// scrape the head > script content
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyByte)))
+	if err != nil {
+		slog.Error("error initializing goquery new document from reader: %v", "error", err)
+		os.Exit(1)
+	}
+
+	var scriptContent string
+	doc.Find("script").Each(func(_ int, s *goquery.Selection) {
+		scriptContent = s.Text()
+	})
+
+	if scriptContent == "" {
+		slog.Error("no script content found")
+		os.Exit(1)
+	}
+
+	err = os.WriteFile("script_content.html", []byte(scriptContent), 0644)
+	if err != nil {
+		slog.Error("error writing file: %v", "error", err)
+		os.Exit(1)
+	}
+
+	regex := regexp.MustCompile(`var requestScope = (.*);`)
+	matches := regex.FindStringSubmatch(scriptContent)
+	if len(matches) == 0 {
+		slog.Error("no matches found when searching for requestScope")
+		os.Exit(1)
+	}
+
+	// save as a json file
+	err = os.WriteFile("request_scope.json", []byte(matches[1]), 0644)
+	if err != nil {
+		slog.Error("error writing file: %v", "error", err)
+		os.Exit(1)
+	}
+
+	// unmarshal the json
+	var processes []esaj.Process
+	err = json.Unmarshal([]byte(matches[1]), &processes)
+	if err != nil {
+		slog.Error("error unmarshalling json: %v", "error", err)
+		os.Exit(1)
+	}
+
+	slog.Info(fmt.Sprintf("cdDocumento: %s", processes[0].Data.CdDocumento))
 }
