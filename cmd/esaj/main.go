@@ -142,6 +142,10 @@ func abrirPastaDigital(jsessionid, processCode string) (string, error) {
 		return "", fmt.Errorf("no link found")
 	}
 
+	if strings.Contains(link, "Não foi possível validar o seu acesso") {
+		return "", fmt.Errorf("access not validated, verify the JSESSIONID")
+	}
+
 	return link, nil
 }
 
