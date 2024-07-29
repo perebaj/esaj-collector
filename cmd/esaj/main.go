@@ -42,7 +42,7 @@ func foroNumeroUnificado(processID string) (string, error) {
 	return matches[6], nil
 }
 
-func searchDo(jsession string, processID string) (string, error) {
+func searchDo(cookieSession string, processID string) (string, error) {
 	client := &http.Client{}
 
 	numeroDigitoAnoUnificado, err := numeroDigitoAnoUnificado(processID)
@@ -64,7 +64,7 @@ func searchDo(jsession string, processID string) (string, error) {
 		return "", fmt.Errorf("error creating request: %w", err)
 	}
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-	req.Header.Set("Cookie", jsession)
+	req.Header.Set("Cookie", cookieSession)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -106,7 +106,7 @@ func searchDo(jsession string, processID string) (string, error) {
 	return processCode, nil
 }
 
-func abrirPastaDigital(jsessionid, processCode string) (string, error) {
+func abrirPastaDigital(cookieSession, processCode string) (string, error) {
 	formatedURL := fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/abrirPastaDigital.do?processo.codigo=%s", processCode)
 	slog.Info(fmt.Sprintf("formatedURL: %s", formatedURL))
 
@@ -116,7 +116,7 @@ func abrirPastaDigital(jsessionid, processCode string) (string, error) {
 		return "", fmt.Errorf("error creating request: %w", err)
 	}
 
-	req.Header.Set("Cookie", jsessionid)
+	req.Header.Set("Cookie", cookieSession)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -143,10 +143,48 @@ func abrirPastaDigital(jsessionid, processCode string) (string, error) {
 	}
 
 	if strings.Contains(link, "Não foi possível validar o seu acesso") {
-		return "", fmt.Errorf("access not validated, verify the JSESSIONID")
+		return "", fmt.Errorf("access not validated, verify the COOKIESESSION")
 	}
 
 	return link, nil
+}
+
+// Cookie holds the useful information from the cookies.
+type Cookie struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// formatCookies reads the cookies.json file and formats the cookies to be used in the requests.
+func formatCookies() (string, error) {
+	cookies, err := os.ReadFile("cookies.json")
+	if err != nil {
+		return "", fmt.Errorf("error reading cookies: %w", err)
+	}
+
+	var cookiesJSON []Cookie
+
+	err = json.Unmarshal(cookies, &cookiesJSON)
+	if err != nil {
+		return "", fmt.Errorf("error unmarshalling cookies: %w", err)
+	}
+
+	var cookieHeader string
+	for _, cookie := range cookiesJSON {
+		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "cpopg") {
+			cookieHeader = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
+		}
+
+		if strings.Contains(cookie.Name, "K-JSESSIONID-knbbofpc") {
+			cookieHeader = fmt.Sprintf("%s %s=%s;", cookieHeader, cookie.Name, cookie.Value)
+		}
+	}
+
+	// remove the last character, a additional semicolon
+	cookieHeader = cookieHeader[:len(cookieHeader)-1]
+	slog.Info(fmt.Sprintf("cookieHeader: %s", cookieHeader))
+
+	return cookieHeader, nil
 }
 
 func main() {
@@ -161,14 +199,13 @@ func main() {
 
 	slog.SetDefault(logger)
 
-	jsession := getEnvWithDefault("JSESSIONID", "")
-
-	if jsession == "" {
-		slog.Error("The JSESSIONID environment variable is required")
+	cookieSession, err := formatCookies()
+	if err != nil {
+		slog.Error("error formatting cookies: %v", "error", err)
 		os.Exit(1)
 	}
 
-	processCode, err := searchDo(jsession, "1029989-06.2022.8.26.0053")
+	processCode, err := searchDo(cookieSession, "1029989-06.2022.8.26.0053")
 	if err != nil {
 		slog.Error("error searching do: %v", "error", err)
 		os.Exit(1)
@@ -176,7 +213,7 @@ func main() {
 
 	slog.Info(fmt.Sprintf("processCode: %s", processCode))
 
-	pastaDigitalURL, err := abrirPastaDigital(jsession, processCode)
+	pastaDigitalURL, err := abrirPastaDigital(cookieSession, processCode)
 	if err != nil {
 		slog.Error("error opening digital folder: %v", "error", err)
 		os.Exit(1)
@@ -190,8 +227,6 @@ func main() {
 		slog.Error("error creating request: %v", "error", err)
 		os.Exit(1)
 	}
-
-	req.Header.Set("Cookie", jsession)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -214,8 +249,6 @@ func main() {
 		slog.Error("error writing file: %v", "error", err)
 		os.Exit(1)
 	}
-
-	// scrape the head > script content
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyByte)))
 	if err != nil {
@@ -246,14 +279,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	// save as a json file
 	err = os.WriteFile("request_scope.json", []byte(matches[1]), 0644)
 	if err != nil {
 		slog.Error("error writing file: %v", "error", err)
 		os.Exit(1)
 	}
 
-	// unmarshal the json
 	var processes []esaj.Process
 	err = json.Unmarshal([]byte(matches[1]), &processes)
 	if err != nil {

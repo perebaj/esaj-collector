@@ -77,6 +77,7 @@ func main() {
 		chromedp.WaitVisible(`#pbEntrar`, chromedp.ByID),
 		chromedp.Click(`#pbEntrar`, chromedp.ByID),
 		chromedp.WaitVisible(`h1.esajTituloPagina`, chromedp.ByQuery),
+		chromedp.Navigate("https://esaj.tjsp.jus.br/cpopg/open.do?gateway=true"),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			cookies, err = storage.GetCookies().Do(ctx)
 			if err != nil {
