@@ -1,9 +1,14 @@
 GOLANGCI_LINT_VERSION = v1.59.1
 
-## Run main service from cmd/main.go
-.PHONY: run
-run:
+## Run the esaj service from cmd/esaj/main.go
+.PHONY: esaj
+esaj:
 	go run cmd/esaj/main.go
+
+## Run the headless service from cmd/headless/main.go
+.PHONY: headless
+headless:
+	go run cmd/headless/main.go
 
 ## run all tests. Usage `make test` or `make test testcase="TestFunctionName"` to run an isolated tests
 .PHONY: test
