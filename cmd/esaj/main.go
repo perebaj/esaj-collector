@@ -15,14 +15,6 @@ import (
 	"github.com/perebaj/esaj"
 )
 
-func getEnvWithDefault(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
 func numeroDigitoAnoUnificado(processID string) (string, error) {
 	regex := regexp.MustCompile(`(\d{7}-\d{2}.\d{4})`)
 	matches := regex.FindStringSubmatch(processID)
