@@ -207,7 +207,7 @@ func main() {
 
 	pastaDigitalURL, err := abrirPastaDigital(cookieSession, processCode)
 	if err != nil {
-		slog.Error("error opening digital folder: %v", "error", err)
+		slog.Error("error opening digital folder", "error", err)
 		os.Exit(1)
 	}
 
@@ -284,5 +284,81 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info(fmt.Sprintf("cdDocumento: %s", processes[0].Data.CdDocumento))
+	slog.Info(fmt.Sprintf("parametros get pdf: %s", processes[0].Children[0].ChildernData.Parametros))
+
+	hrefGetPDF := "https://esaj.tjsp.jus.br/pastadigital/getPDF.do?" + processes[0].Children[0].ChildernData.Parametros
+
+	slog.Info(fmt.Sprintf("hrefGetPDF: %s", hrefGetPDF))
+
+	cookiePDFSession, err := formatCookieGetPDF()
+	if err != nil {
+		slog.Error("error formatting cookies: %v", "error", err)
+		os.Exit(1)
+	}
+
+	req, err = http.NewRequest("GET", hrefGetPDF, nil)
+	if err != nil {
+		slog.Error("error creating request: %v", "error", err)
+		os.Exit(1)
+	}
+
+	req.Header.Set("Cookie", cookiePDFSession)
+
+	resp, err = client.Do(req)
+	if err != nil {
+		slog.Error("error doing request: %v", "error", err)
+		os.Exit(1)
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	bodyByte, err = io.ReadAll(resp.Body)
+	if err != nil {
+		slog.Error("error reading body: %v", "error", err)
+		os.Exit(1)
+	}
+
+	if strings.Contains(string(bodyByte), "Sua sessão expirou") {
+		slog.Error("access not authorized to get pdf")
+		os.Exit(1)
+	}
+
+	err = os.WriteFile("documento.pdf", bodyByte, 0644)
+	if err != nil {
+		slog.Error("error writing file: %v", "error", err)
+		os.Exit(1)
+	}
+}
+
+func formatCookieGetPDF() (string, error) {
+	cookies, err := os.ReadFile("cookies.json")
+	if err != nil {
+		return "", fmt.Errorf("error reading cookies: %w", err)
+	}
+
+	var cookiesJSON []Cookie
+
+	err = json.Unmarshal(cookies, &cookiesJSON)
+	if err != nil {
+		return "", fmt.Errorf("error unmarshalling cookies: %w", err)
+	}
+
+	var cookieHeader string
+	for _, cookie := range cookiesJSON {
+		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "pasta6") {
+			cookieHeader = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
+		}
+
+		if strings.Contains(cookie.Name, "K-JSESSIONID-phoaambo") {
+			cookieHeader = fmt.Sprintf("%s %s=%s;", cookieHeader, cookie.Name, cookie.Value)
+		}
+	}
+
+	// remove the last character, a additional semicolon
+	cookieHeader = cookieHeader[:len(cookieHeader)-1]
+	slog.Info(fmt.Sprintf("cookieHeader: %s", cookieHeader))
+
+	return cookieHeader, nil
 }
