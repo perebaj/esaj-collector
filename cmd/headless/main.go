@@ -81,7 +81,12 @@ func main() {
 		chromedp.WaitVisible(`#pbEntrar`, chromedp.ByID),
 		chromedp.Click(`#pbEntrar`, chromedp.ByID),
 		chromedp.WaitVisible(`h1.esajTituloPagina`, chromedp.ByQuery),
-		chromedp.Navigate("https://esaj.tjsp.jus.br/cpopg/open.do?gateway=true"),
+		chromedp.Navigate("https://esaj.tjsp.jus.br/cpopg/open.do"),
+		chromedp.WaitVisible(`a.linkLogo`, chromedp.ByQuery),
+		chromedp.Navigate("https://esaj.tjsp.jus.br/cpopg/show.do?processo.codigo=1H000MCVK0000&processo.foro=53&processo.numero=1029989-06.2022.8.26.0053"),
+		chromedp.Navigate("https://esaj.tjsp.jus.br/cpopg/abrirPastaDigital.do?processo.codigo=1H000MCVK0000"),
+		chromedp.WaitVisible(`body`, chromedp.ByQuery),
+		chromedp.Text(`body`, &pastaVirtualBodyTxt, chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			u, err := url.Parse(pastaVirtualBodyTxt)
 			if err != nil {
@@ -121,6 +126,8 @@ func main() {
 		slog.Error("Failed to save cookies", "error", err)
 		os.Exit(1)
 	}
+
+	slog.Info("Cookies saved!")
 }
 
 func saveCookies(cookies []*network.Cookie) error {
