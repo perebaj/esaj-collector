@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 
 	"github.com/chromedp/cdproto/network"
@@ -49,7 +50,7 @@ func main() {
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
-		chromedp.Flag("headless", true),
+		chromedp.Flag("headless", false),
 	)
 
 	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
@@ -69,6 +70,9 @@ func main() {
 	}
 
 	var cookies []*network.Cookie
+	var pastaVirtualBodyTxt string
+	var pastaVirtualHREF string
+
 	err = chromedp.Run(ctx,
 		chromedp.Navigate(`https://esaj.tjsp.jus.br/sajcas/login`),
 		chromedp.WaitVisible(`#usernameForm`, chromedp.ByID),
@@ -79,6 +83,25 @@ func main() {
 		chromedp.WaitVisible(`h1.esajTituloPagina`, chromedp.ByQuery),
 		chromedp.Navigate("https://esaj.tjsp.jus.br/cpopg/open.do?gateway=true"),
 		chromedp.ActionFunc(func(ctx context.Context) error {
+			u, err := url.Parse(pastaVirtualBodyTxt)
+			if err != nil {
+				return fmt.Errorf("could not parse pastaVirtualHFEF: %v", err)
+			}
+
+			pastaVirtualHREF = u.RawQuery
+
+			slog.Info("pastaVirtualURL", "url", pastaVirtualHREF)
+			// create a navigation entry
+			err = chromedp.Navigate("https://esaj.tjsp.jus.br/pastadigital/abrirPastaProcessoDigital.do?" + pastaVirtualHREF).Do(ctx)
+			if err != nil {
+				return fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)
+			}
+
+			err = chromedp.WaitVisible(`input#salvarButton`, chromedp.ByQuery).Do(ctx)
+			if err != nil {
+				return fmt.Errorf("could not wait for input#salvarButton: %v", err)
+			}
+
 			cookies, err = storage.GetCookies().Do(ctx)
 			if err != nil {
 				return fmt.Errorf("could not get cookies: %v", err)
@@ -93,7 +116,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	var cookiesJSON []Cookie
+	err = saveCookies(cookies)
+	if err != nil {
+		slog.Error("Failed to save cookies", "error", err)
+		os.Exit(1)
+	}
+}
+
+func saveCookies(cookies []*network.Cookie) error {
+	cookiesJSON := make([]Cookie, 0, len(cookies))
 	for _, cookie := range cookies {
 		cookiesJSON = append(cookiesJSON, Cookie{
 			Name:  cookie.Name,
@@ -101,15 +132,15 @@ func main() {
 		})
 	}
 
-	cokiesBytes, err := json.Marshal(cookiesJSON)
+	cookiesBytes, err := json.Marshal(cookiesJSON)
 	if err != nil {
-		slog.Error("Failed to marshal cookies to json", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to marshal cookies to json: %v", err)
 	}
 
-	err = os.WriteFile("cookies.json", cokiesBytes, 0644)
+	err = os.WriteFile("cookies.json", cookiesBytes, 0644)
 	if err != nil {
-		slog.Error("Failed to write cookies to file", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to write cookies to file: %v", err)
 	}
+
+	return nil
 }
