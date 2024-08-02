@@ -2,7 +2,7 @@
 package main
 
 import (
-	"encoding/json"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -11,73 +11,12 @@ import (
 	"github.com/perebaj/esaj"
 )
 
-// Cookie holds the useful information from the cookies.
-type Cookie struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-// formatCookies reads the cookies.json file and formats the cookies to be used in the requests.
-func formatCookies() (string, error) {
-	cookies, err := os.ReadFile("cookies.json")
-	if err != nil {
-		return "", fmt.Errorf("error reading cookies: %w", err)
+func getEnvWithDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
 	}
-
-	var cookiesJSON []Cookie
-
-	err = json.Unmarshal(cookies, &cookiesJSON)
-	if err != nil {
-		return "", fmt.Errorf("error unmarshalling cookies: %w", err)
-	}
-
-	var cookieHeader string
-	for _, cookie := range cookiesJSON {
-		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "cpopg") {
-			cookieHeader = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
-		}
-
-		if strings.Contains(cookie.Name, "K-JSESSIONID-knbbofpc") {
-			cookieHeader = fmt.Sprintf("%s %s=%s;", cookieHeader, cookie.Name, cookie.Value)
-		}
-	}
-
-	// remove the last character, a additional semicolon
-	cookieHeader = cookieHeader[:len(cookieHeader)-1]
-	slog.Info(fmt.Sprintf("cookieHeader: %s", cookieHeader))
-
-	return cookieHeader, nil
-}
-
-func formatCookieGetPDF() (string, error) {
-	cookies, err := os.ReadFile("cookies.json")
-	if err != nil {
-		return "", fmt.Errorf("error reading cookies: %w", err)
-	}
-
-	var cookiesJSON []Cookie
-
-	err = json.Unmarshal(cookies, &cookiesJSON)
-	if err != nil {
-		return "", fmt.Errorf("error unmarshalling cookies: %w", err)
-	}
-
-	var cookieHeader string
-	for _, cookie := range cookiesJSON {
-		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "pasta") {
-			cookieHeader = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
-		}
-
-		if strings.Contains(cookie.Name, "K-JSESSIONID-phoaambo") {
-			cookieHeader = fmt.Sprintf("%s %s=%s;", cookieHeader, cookie.Name, cookie.Value)
-		}
-	}
-
-	// remove the last character, a additional semicolon
-	cookieHeader = cookieHeader[:len(cookieHeader)-1]
-	slog.Info(fmt.Sprintf("cookieHeader get pdf: %s", cookieHeader))
-
-	return cookieHeader, nil
+	return value
 }
 
 func main() {
@@ -92,13 +31,57 @@ func main() {
 
 	slog.SetDefault(logger)
 
-	cookieSession, err := formatCookies()
-	if err != nil {
-		slog.Error("error formatting cookies: %v", "error", err)
+	esajLogin := esaj.Login{
+		Username: getEnvWithDefault("ESAJ_USERNAME", ""),
+		Password: getEnvWithDefault("ESAJ_PASSWORD", ""),
+	}
+
+	if esajLogin.Username == "" || esajLogin.Password == "" {
+		slog.Error("ESAJ_USERNAME and/or ESAJ_PASSWORD not set")
 		os.Exit(1)
 	}
 
-	processCode := "1H000H91J0000"
+	processID := flag.String("processID", "", "Process ID to search in the format 1016358-63.2020.8.26.0053")
+	flag.Parse()
+
+	if *processID == "" {
+		slog.Error("processID not set")
+		os.Exit(1)
+	}
+
+	cookies, err := esaj.GetCookies(esajLogin, true, *processID)
+	if err != nil {
+		slog.Error("error getting cookies: %v", "error", err)
+		os.Exit(1)
+	}
+
+	var cookieSession string
+	var cookiePDFSession string
+	for _, cookie := range cookies {
+		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "cpopg") {
+			cookieSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
+		}
+
+		if strings.Contains(cookie.Name, "K-JSESSIONID-knbbofpc") {
+			cookieSession = fmt.Sprintf("%s %s=%s;", cookieSession, cookie.Name, cookie.Value)
+		}
+
+		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "pasta") {
+			cookiePDFSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
+		}
+
+		if strings.Contains(cookie.Name, "K-JSESSIONID-phoaambo") {
+			cookiePDFSession = fmt.Sprintf("%s %s=%s;", cookiePDFSession, cookie.Name, cookie.Value)
+		}
+	}
+
+	processCode, err := esaj.SearchDo(cookieSession, *processID)
+	if err != nil {
+		slog.Error("error searching process", "error", err)
+		os.Exit(1)
+	}
+
+	slog.Info(fmt.Sprintf("processCode was found: %s for the processID: %s", processCode, *processID))
 
 	processes, err := esaj.AbrirPastaProcessoDigital(cookieSession, processCode)
 	if err != nil {
@@ -108,15 +91,11 @@ func main() {
 
 	slog.Info("processes: %v", "processes [0] param", processes[0].Children[0].ChildernData.Parametros)
 
-	cookiePDFSession, err := formatCookieGetPDF()
-	if err != nil {
-		slog.Error("error formatting cookies: %v", "error", err)
-		os.Exit(1)
-	}
-
 	err = esaj.GetPDF(cookiePDFSession, processes[0].Children[0].ChildernData.Parametros)
 	if err != nil {
 		slog.Error("error getting pdf: %v", "error", err)
 		os.Exit(1)
 	}
+
+	slog.Info("pdf downloaded successfully")
 }

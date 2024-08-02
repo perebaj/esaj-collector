@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"time"
 
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/storage"
@@ -73,10 +74,13 @@ func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.C
 		chromedp.Flag("headless", headless),
 	)
 
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	ctx, cancel := chromedp.NewContext(allocCtx)
+	allocCtx, cancel := chromedp.NewExecAllocator(ctx, opts...)
+	defer cancel()
+
+	ctx, cancel = chromedp.NewContext(allocCtx)
 	defer cancel()
 
 	var cookies []*network.Cookie
@@ -154,7 +158,7 @@ func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.C
 			// pastaDigitalHREF parse the BodyText to a valid href to navigate to the pastadigital
 			pastaDigitalHREF := u.RawQuery
 
-			slog.Debug("parsed pasta digital href", "url", pastaDigitalHREF)
+			slog.Debug("parsed pasta digital href", "href", pastaDigitalHREF)
 
 			cookies, err = navigatePastaVirtualURL(ctx, "https://esaj.tjsp.jus.br/pastadigital/abrirPastaProcessoDigital.do?"+pastaDigitalHREF)
 			if err != nil {
@@ -173,6 +177,7 @@ func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.C
 }
 
 func navigatePastaVirtualURL(ctx context.Context, pastaVirtualURL string) ([]*network.Cookie, error) {
+	slog.Info("navigating to pastaVirtualURL", "url", pastaVirtualURL)
 	err := chromedp.Navigate(pastaVirtualURL).Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)
