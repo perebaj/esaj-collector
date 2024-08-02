@@ -2,16 +2,13 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"os"
 
 	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/cdproto/storage"
-	"github.com/chromedp/chromedp"
 	"github.com/perebaj/esaj"
 )
 
@@ -23,12 +20,6 @@ func getEnvWithDefault(key, defaultValue string) string {
 	return value
 }
 
-// ESAJLogin is a struct that holds the login information for the ESAJ website.
-type ESAJLogin struct {
-	username string
-	password string
-}
-
 // Cookie holds the useful information from the cookies.
 type Cookie struct {
 	Name  string `json:"name"`
@@ -38,7 +29,7 @@ type Cookie struct {
 func main() {
 	logger, err := esaj.NewLoggerSlog(esaj.ConfigLogger{
 		Level:  esaj.LevelDebug,
-		Format: esaj.FormatJSON,
+		Format: esaj.FormatLogFmt,
 	})
 
 	if err != nil {
@@ -48,76 +39,27 @@ func main() {
 
 	slog.SetDefault(logger)
 
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.DisableGPU,
-		chromedp.Flag("headless", true),
-	)
-
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	defer cancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	esajLogin := ESAJLogin{
-		username: getEnvWithDefault("ESAJ_USERNAME", ""),
-		password: getEnvWithDefault("ESAJ_PASSWORD", ""),
+	esajLogin := esaj.Login{
+		Username: getEnvWithDefault("ESAJ_USERNAME", ""),
+		Password: getEnvWithDefault("ESAJ_PASSWORD", ""),
 	}
 
-	if esajLogin.username == "" || esajLogin.password == "" {
+	if esajLogin.Username == "" || esajLogin.Password == "" {
 		slog.Error("ESAJ_USERNAME and/or ESAJ_PASSWORD not set")
 		os.Exit(1)
 	}
 
-	var cookies []*network.Cookie
-	var pastaVirtualBodyTxt string
-	var pastaVirtualHREF string
+	processID := flag.String("processID", "", "Process ID to search in the format 1016358-63.2020.8.26.0053")
+	flag.Parse()
 
-	err = chromedp.Run(ctx,
-		chromedp.Navigate(`https://esaj.tjsp.jus.br/sajcas/login`),
-		chromedp.WaitVisible(`#usernameForm`, chromedp.ByID),
-		chromedp.SendKeys(`#usernameForm`, esajLogin.username),
-		chromedp.SendKeys(`#passwordForm`, esajLogin.password),
-		chromedp.WaitVisible(`#pbEntrar`, chromedp.ByID),
-		chromedp.Click(`#pbEntrar`, chromedp.ByID),
-		chromedp.WaitVisible(`h1.esajTituloPagina`, chromedp.ByQuery),
-		chromedp.Navigate("https://esaj.tjsp.jus.br/cpopg/open.do"),
-		chromedp.WaitVisible(`a.linkLogo`, chromedp.ByQuery),
-		chromedp.Navigate("https://esaj.tjsp.jus.br/cpopg/show.do?processo.codigo=1H000MCVK0000&processo.foro=53&processo.numero=1029989-06.2022.8.26.0053"),
-		chromedp.Navigate("https://esaj.tjsp.jus.br/cpopg/abrirPastaDigital.do?processo.codigo=1H000MCVK0000"),
-		chromedp.WaitVisible(`body`, chromedp.ByQuery),
-		chromedp.Text(`body`, &pastaVirtualBodyTxt, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			u, err := url.Parse(pastaVirtualBodyTxt)
-			if err != nil {
-				return fmt.Errorf("could not parse pastaVirtualHFEF: %v", err)
-			}
+	if *processID == "" {
+		slog.Error("processID not set")
+		os.Exit(1)
+	}
 
-			pastaVirtualHREF = u.RawQuery
-
-			slog.Info("pastaVirtualURL", "url", pastaVirtualHREF)
-			// create a navigation entry
-			err = chromedp.Navigate("https://esaj.tjsp.jus.br/pastadigital/abrirPastaProcessoDigital.do?" + pastaVirtualHREF).Do(ctx)
-			if err != nil {
-				return fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)
-			}
-
-			err = chromedp.WaitVisible(`input#salvarButton`, chromedp.ByQuery).Do(ctx)
-			if err != nil {
-				return fmt.Errorf("could not wait for input#salvarButton: %v", err)
-			}
-
-			cookies, err = storage.GetCookies().Do(ctx)
-			if err != nil {
-				return fmt.Errorf("could not get cookies: %v", err)
-			}
-
-			return nil
-		}),
-	)
-
+	cookies, err := esaj.GetCookies(esajLogin, true, *processID)
 	if err != nil {
-		slog.Error("Failed to run chromedp", "error", err)
+		slog.Error("Failed to get cookies", "error", err)
 		os.Exit(1)
 	}
 
@@ -127,7 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("Cookies saved!")
+	slog.Info("Cookies saved successfully")
 }
 
 func saveCookies(cookies []*network.Cookie) error {
