@@ -17,29 +17,24 @@ type Login struct {
 	Password string
 }
 
-type Params struct {
-	ProcessoCodigo string
-	ProcessoForo   string
-	ProcessoNumero string
-}
-
 // showDoURL is the page that retreive the specific information about a process.
-// processoCodigo example: 1H000H91J0000 | BB00025UE0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
+// Parameters:
+// - processoCodigo example: 1H000H91J0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
 // the only thing that we can assume is that it is a string with 13 characters.
-// processoForo example: 53 or 0053
-// processoNumero example: 1016358-63.2020.8.26.0053
-func showDoURL(processoCodigo, processoForo, processoNumero string) string {
-	// The url.QueryEscape is used to escape the special characters from the URL and avoid errors.
+// - processoForo example: 53 or 0053
+// - processID example: 1016358-63.2020.8.26.0053
+func showDoURL(processoCodigo, processoForo, processID string) string {
+	// The url.QueryEscape is used to escape the special characters to avoid errors.
 	processoForo = url.QueryEscape(processoForo)
 	processoCodigo = url.QueryEscape(processoCodigo)
-	processoNumero = url.QueryEscape(processoNumero)
+	processID = url.QueryEscape(processID)
 
-	return fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/show.do?processo.codigo=%s&processo.foro=%s&processo.numero=%s", processoCodigo, processoForo, processoNumero)
+	return fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/show.do?processo.codigo=%s&processo.foro=%s&processo.numero=%s", processoCodigo, processoForo, processID)
 }
 
 // searchDoURL retrive the page that we need to access to get the processoCodigo.
-// processID example: 1016358-63.2020.8.26.0053
-// processID is the same as processoNumero.
+// Parameters:
+// - processID example: 1016358-63.2020.8.26.0053
 func searchDoURL(processID string) (string, error) {
 	foro, err := foroNumeroUnificado(processID)
 	if err != nil {
@@ -56,18 +51,20 @@ func searchDoURL(processID string) (string, error) {
 		nil
 }
 
-// abrirPastaDigitalDoURL is the page that retreive all the pdfs of the process.
-// processoCodigo example: 1H000H91J0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
-// the only thing that we can assume is that it is a string with 13 characters.
+// abrirPastaDigitalDoURL is the page that retreive all the pdfs documents of the process.
+// Parameters:
+// - processoCodigo example: 1H000H91J0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
 func abrirPastaDigitalDoURL(processoCodigo string) string {
-	// The url.QueryEscape is used to escape the special characters from the URL and avoid errors.
+	// The url.QueryEscape is used to escape the special characters to avoid errors.
 	processoCodigo = url.QueryEscape(processoCodigo)
 
 	return fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/abrirPastaDigital.do?processo.codigo=%s", processoCodigo)
 }
 
 // GetCookies use a headless browser to simulate the login and all the steps to retrive the cookies from the ESAJ website.
-// headless is a boolean that defines if the browser should be headless or not. For production, it must be true.
+// Parameters:
+// - headless is a boolean that defines if the browser should be headless or not. For production, it must be true.
+// - processoID example: 1016358-63.2020.8.26.0053
 func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.Cookie, error) {
 	slog.Info(fmt.Sprintf("GetCookies headless initialized with the headless option: %v", headless))
 
@@ -159,14 +156,9 @@ func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.C
 
 			slog.Debug("parsed pasta digital href", "url", pastaDigitalHREF)
 
-			err = navigatePastaVirtualURL(ctx, "https://esaj.tjsp.jus.br/pastadigital/abrirPastaProcessoDigital.do?"+pastaDigitalHREF)
+			cookies, err = navigatePastaVirtualURL(ctx, "https://esaj.tjsp.jus.br/pastadigital/abrirPastaProcessoDigital.do?"+pastaDigitalHREF)
 			if err != nil {
 				return fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)
-			}
-
-			cookies, err = storage.GetCookies().Do(ctx)
-			if err != nil {
-				return fmt.Errorf("could not get cookies: %v", err)
 			}
 
 			return nil
@@ -180,16 +172,18 @@ func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.C
 	return cookies, nil
 }
 
-func navigatePastaVirtualURL(ctx context.Context, pastaVirtualURL string) error {
+func navigatePastaVirtualURL(ctx context.Context, pastaVirtualURL string) ([]*network.Cookie, error) {
 	err := chromedp.Navigate(pastaVirtualURL).Do(ctx)
 	if err != nil {
-		return fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)
+		return nil, fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)
 	}
 
 	err = chromedp.WaitVisible(`input#salvarButton`, chromedp.ByQuery).Do(ctx)
 	if err != nil {
-		return fmt.Errorf("could not wait for input#salvarButton: %v", err)
+		return nil, fmt.Errorf("could not wait for input#salvarButton: %v", err)
 	}
 
-	return nil
+	cookies, err := storage.GetCookies().Do(ctx)
+
+	return cookies, err
 }
