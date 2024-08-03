@@ -17,47 +17,6 @@ type Login struct {
 	Password string
 }
 
-// showDoURL is the page that retreive the specific information about a process.
-// - processoCodigo example: 1H000H91J0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
-// the only thing that we can assume is that it is a string with 13 characters.
-// - processoForo example: 53 or 0053
-// - processID example: 1016358-63.2020.8.26.0053
-func showDoURL(processoCodigo, processoForo, processID string) string {
-	// The url.QueryEscape is used to escape the special characters to avoid errors.
-	processoForo = url.QueryEscape(processoForo)
-	processoCodigo = url.QueryEscape(processoCodigo)
-	processID = url.QueryEscape(processID)
-
-	return fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/show.do?processo.codigo=%s&processo.foro=%s&processo.numero=%s", processoCodigo, processoForo, processID)
-}
-
-// searchDoURL retrive the page that we need to access to get the processoCodigo.
-// - processID example: 1016358-63.2020.8.26.0053
-func searchDoURL(processID string) (string, error) {
-	foro, err := foroNumeroUnificado(processID)
-	if err != nil {
-		return "", err
-	}
-
-	numDigAno, err := numeroDigitoAnoUnificado(processID)
-	if err != nil {
-		return "", err
-	}
-
-	//TODO(@perebaj): reduce this string to a more readable format.
-	return fmt.Sprintf(`https://esaj.tjsp.jus.br/cpopg/search.do?conversationId=&cbPesquisa=NUMPROC&numeroDigitoAnoUnificado=%s&foroNumeroUnificado=%s&dadosConsulta.valorConsultaNuUnificado=%s&dadosConsulta.valorConsultaNuUnificado=UNIFICADO&dadosConsulta.valorConsulta=&dadosConsulta.tipoNuProcesso=UNIFICADO`, numDigAno, foro, processID),
-		nil
-}
-
-// abrirPastaDigitalDoURL is the page that retreive all the pdfs documents of the process.
-// - processoCodigo example: 1H000H91J0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
-func abrirPastaDigitalDoURL(processoCodigo string) string {
-	// The url.QueryEscape is used to escape the special characters to avoid errors.
-	processoCodigo = url.QueryEscape(processoCodigo)
-
-	return fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/abrirPastaDigital.do?processo.codigo=%s", processoCodigo)
-}
-
 // GetCookies use a headless browser to simulate the login and all the steps to retrive the cookies from the ESAJ website.
 // - headless is a boolean that defines if the browser should be headless or not. For production, it must be true.
 // - processoID example: 1016358-63.2020.8.26.0053
@@ -168,6 +127,47 @@ func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID 
 	}
 
 	return cookies, nil
+}
+
+// showDoURL is the page that retreive the specific information about a process.
+// - processoCodigo example: 1H000H91J0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
+// the only thing that we can assume is that it is a string with 13 characters.
+// - processoForo example: 53 or 0053
+// - processID example: 1016358-63.2020.8.26.0053
+func showDoURL(processoCodigo, processoForo, processID string) string {
+	// The url.QueryEscape is used to escape the special characters to avoid errors.
+	processoForo = url.QueryEscape(processoForo)
+	processoCodigo = url.QueryEscape(processoCodigo)
+	processID = url.QueryEscape(processID)
+
+	return fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/show.do?processo.codigo=%s&processo.foro=%s&processo.numero=%s", processoCodigo, processoForo, processID)
+}
+
+// searchDoURL retrive the page that we need to access to get the processoCodigo.
+// - processID example: 1016358-63.2020.8.26.0053
+func searchDoURL(processID string) (string, error) {
+	foro, err := foroNumeroUnificado(processID)
+	if err != nil {
+		return "", err
+	}
+
+	numDigAno, err := numeroDigitoAnoUnificado(processID)
+	if err != nil {
+		return "", err
+	}
+
+	//TODO(@perebaj): reduce this string to a more readable format.
+	return fmt.Sprintf(`https://esaj.tjsp.jus.br/cpopg/search.do?conversationId=&cbPesquisa=NUMPROC&numeroDigitoAnoUnificado=%s&foroNumeroUnificado=%s&dadosConsulta.valorConsultaNuUnificado=%s&dadosConsulta.valorConsultaNuUnificado=UNIFICADO&dadosConsulta.valorConsulta=&dadosConsulta.tipoNuProcesso=UNIFICADO`, numDigAno, foro, processID),
+		nil
+}
+
+// abrirPastaDigitalDoURL is the page that retreive all the pdfs documents of the process.
+// - processoCodigo example: 1H000H91J0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
+func abrirPastaDigitalDoURL(processoCodigo string) string {
+	// The url.QueryEscape is used to escape the special characters to avoid errors.
+	processoCodigo = url.QueryEscape(processoCodigo)
+
+	return fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/abrirPastaDigital.do?processo.codigo=%s", processoCodigo)
 }
 
 func navigatePastaVirtualURL(ctx context.Context, pastaVirtualURL string) ([]*network.Cookie, error) {
