@@ -25,6 +25,12 @@ lint: ## Run linter
 	@echo "Running linter..."
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./... -v
 
+## Run test coverage
+.PHONY: coverage
+coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
+
 ## Display help for all targets
 .PHONY: help
 help:

@@ -18,7 +18,6 @@ type Login struct {
 }
 
 // showDoURL is the page that retreive the specific information about a process.
-// Parameters:
 // - processoCodigo example: 1H000H91J0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
 // the only thing that we can assume is that it is a string with 13 characters.
 // - processoForo example: 53 or 0053
@@ -33,7 +32,6 @@ func showDoURL(processoCodigo, processoForo, processID string) string {
 }
 
 // searchDoURL retrive the page that we need to access to get the processoCodigo.
-// Parameters:
 // - processID example: 1016358-63.2020.8.26.0053
 func searchDoURL(processID string) (string, error) {
 	foro, err := foroNumeroUnificado(processID)
@@ -52,7 +50,6 @@ func searchDoURL(processID string) (string, error) {
 }
 
 // abrirPastaDigitalDoURL is the page that retreive all the pdfs documents of the process.
-// Parameters:
 // - processoCodigo example: 1H000H91J0000. Important to mentioned that this ID does not have a defined pattern, it's a internal ID from the ESAJ
 func abrirPastaDigitalDoURL(processoCodigo string) string {
 	// The url.QueryEscape is used to escape the special characters to avoid errors.
@@ -62,7 +59,6 @@ func abrirPastaDigitalDoURL(processoCodigo string) string {
 }
 
 // GetCookies use a headless browser to simulate the login and all the steps to retrive the cookies from the ESAJ website.
-// Parameters:
 // - headless is a boolean that defines if the browser should be headless or not. For production, it must be true.
 // - processoID example: 1016358-63.2020.8.26.0053
 func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID string) ([]*network.Cookie, error) {
