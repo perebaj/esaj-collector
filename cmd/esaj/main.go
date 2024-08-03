@@ -7,8 +7,10 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/perebaj/esaj"
+	"golang.org/x/net/context"
 )
 
 func getEnvWithDefault(key, defaultValue string) string {
@@ -18,6 +20,12 @@ func getEnvWithDefault(key, defaultValue string) string {
 	}
 	return value
 }
+
+type contextKey string
+
+var (
+	processIDContextKey = contextKey("processID")
+)
 
 func main() {
 	logger, err := esaj.NewLoggerSlog(esaj.ConfigLogger{
@@ -49,9 +57,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	cookies, err := esaj.GetCookies(esajLogin, true, *processID)
+	logger = logger.With("processID", *processID)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	ctx = context.WithValue(ctx, processIDContextKey, *processID)
+
+	cookies, err := esaj.GetCookies(ctx, esajLogin, true, *processID)
 	if err != nil {
-		slog.Error("error getting cookies: %v", "error", err)
+		logger.Error("error getting cookies: %v", "error", err)
 		os.Exit(1)
 	}
 
@@ -77,25 +92,25 @@ func main() {
 
 	processCode, err := esaj.SearchDo(cookieSession, *processID)
 	if err != nil {
-		slog.Error("error searching process", "error", err)
+		logger.Error("error searching process", "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info(fmt.Sprintf("processCode was found: %s for the processID: %s", processCode, *processID))
+	logger.Info(fmt.Sprintf("processCode was found: %s for the processID: %s", processCode, *processID))
 
 	processes, err := esaj.AbrirPastaProcessoDigital(cookieSession, processCode)
 	if err != nil {
-		slog.Error("error opening digital folder", "error", err)
+		logger.Error("error opening digital folder", "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info("processes: %v", "processes [0] param", processes[0].Children[0].ChildernData.Parametros)
+	logger.Info("processes: %v", "processes [0] param", processes[0].Children[0].ChildernData.Parametros)
 
 	err = esaj.GetPDF(cookiePDFSession, processes[0].Children[0].ChildernData.Parametros)
 	if err != nil {
-		slog.Error("error getting pdf: %v", "error", err)
+		logger.Error("error getting pdf: %v", "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info("pdf downloaded successfully")
+	logger.Info("pdf downloaded successfully")
 }

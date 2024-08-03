@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"time"
 
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/storage"
@@ -66,16 +65,15 @@ func abrirPastaDigitalDoURL(processoCodigo string) string {
 // Parameters:
 // - headless is a boolean that defines if the browser should be headless or not. For production, it must be true.
 // - processoID example: 1016358-63.2020.8.26.0053
-func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.Cookie, error) {
-	slog.Info(fmt.Sprintf("GetCookies headless initialized with the headless option: %v", headless))
+func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID string) ([]*network.Cookie, error) {
+	logger := slog.With("processID", ctx.Value("processID"))
+
+	logger.Info(fmt.Sprintf("GetCookies headless initialized with the headless option: %v", headless))
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
 		chromedp.Flag("headless", headless),
 	)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
 
 	allocCtx, cancel := chromedp.NewExecAllocator(ctx, opts...)
 	defer cancel()
@@ -89,7 +87,7 @@ func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.C
 	if err != nil {
 		return nil, fmt.Errorf("bulding the searchDoURL: %v", err)
 	}
-	slog.Info("searchDoURL", "url", searchDo)
+	logger.Info("searchDoURL", "url", searchDo)
 
 	err = chromedp.Run(ctx,
 		chromedp.Navigate(`https://esaj.tjsp.jus.br/sajcas/login`),
@@ -111,7 +109,7 @@ func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.C
 				return fmt.Errorf("could not get the url: %v", err)
 			}
 
-			slog.Debug(fmt.Sprintf("searchDoURLWithProcessCode: %s", searchDoURLWithProcessCode))
+			logger.Debug(fmt.Sprintf("searchDoURLWithProcessCode: %s", searchDoURLWithProcessCode))
 
 			err = chromedp.Navigate(searchDoURLWithProcessCode).Do(ctx)
 			if err != nil {
@@ -158,7 +156,7 @@ func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.C
 			// pastaDigitalHREF parse the BodyText to a valid href to navigate to the pastadigital
 			pastaDigitalHREF := u.RawQuery
 
-			slog.Debug("parsed pasta digital href", "href", pastaDigitalHREF)
+			logger.Debug("parsed pasta digital href", "href", pastaDigitalHREF)
 
 			cookies, err = navigatePastaVirtualURL(ctx, "https://esaj.tjsp.jus.br/pastadigital/abrirPastaProcessoDigital.do?"+pastaDigitalHREF)
 			if err != nil {
@@ -177,7 +175,8 @@ func GetCookies(esajLogin Login, headless bool, processoID string) ([]*network.C
 }
 
 func navigatePastaVirtualURL(ctx context.Context, pastaVirtualURL string) ([]*network.Cookie, error) {
-	slog.Info("navigating to pastaVirtualURL", "url", pastaVirtualURL)
+	logger := slog.With("processID", ctx.Value("processID"))
+	logger.Info("navigating to pastaVirtualURL", "url", pastaVirtualURL)
 	err := chromedp.Navigate(pastaVirtualURL).Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)

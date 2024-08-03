@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -34,8 +34,6 @@ func SearchDo(cookieSession string, processID string) (string, error) {
 	}
 
 	urlFormated := fmt.Sprintf(`https://esaj.tjsp.jus.br/cpopg/search.do?conversationId=&cbPesquisa=NUMPROC&numeroDigitoAnoUnificado=%s&foroNumeroUnificado=%s&dadosConsulta.valorConsultaNuUnificado=%s&dadosConsulta.valorConsultaNuUnificado=UNIFICADO&dadosConsulta.valorConsulta=&dadosConsulta.tipoNuProcesso=UNIFICADO`, numeroDigitoAnoUnificado, foroNumeroUnificado, processID)
-
-	slog.Debug(fmt.Sprintf("urlFormated: %s", urlFormated))
 
 	req, err := http.NewRequest("GET", urlFormated, nil)
 	if err != nil {
@@ -90,7 +88,6 @@ func SearchDo(cookieSession string, processID string) (string, error) {
 // Example of cookieSession: "JSESSIONID=EACA3333A48456D7953B6331999A4F80.cas11; K-JSESSIONID-nckcjpip=0E4D006FFD78524DBABA78F02E1633FA"
 func pastaDigitalURL(cookieSession, processCode string) (string, error) {
 	formatedURL := fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/abrirPastaDigital.do?processo.codigo=%s", processCode)
-	slog.Debug(fmt.Sprintf("getPastaDigitalURL formated URL: %s", formatedURL))
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", formatedURL, nil)
@@ -142,8 +139,6 @@ func AbrirPastaProcessoDigital(cookieSession, processCode string) ([]Process, er
 	if err != nil {
 		return nil, fmt.Errorf("error getting pasta digital url: %w", err)
 	}
-
-	slog.Debug(fmt.Sprintf("getPastaDigitalURL: %s", url))
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
@@ -209,13 +204,12 @@ func GetPDF(cookiePDFSession, param string) error {
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
-
 	req.Header.Set("Cookie", cookiePDFSession)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		slog.Error("error doing request: %v", "error", err)
+		return fmt.Errorf("error doing request %w", err)
 	}
 
 	defer func() {
@@ -231,7 +225,10 @@ func GetPDF(cookiePDFSession, param string) error {
 		return fmt.Errorf("session expired")
 	}
 
-	err = os.WriteFile("documento.pdf", bodyByte, 0644)
+	//TODO(@perebaj) remove this necessity of writing the file to disk
+	dt := time.Now().Format("2006-01-02T15:04:05")
+	randomName := fmt.Sprintf("tmp/documento_%s.pdf", dt)
+	err = os.WriteFile(randomName, bodyByte, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing file: %w", err)
 	}

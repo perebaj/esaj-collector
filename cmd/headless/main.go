@@ -2,13 +2,11 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log/slog"
 	"os"
 
-	"github.com/chromedp/cdproto/network"
 	"github.com/perebaj/esaj"
 )
 
@@ -18,12 +16,6 @@ func getEnvWithDefault(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
-}
-
-// Cookie holds the useful information from the cookies.
-type Cookie struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
 }
 
 func main() {
@@ -57,39 +49,4 @@ func main() {
 		os.Exit(1)
 	}
 
-	cookies, err := esaj.GetCookies(esajLogin, true, *processID)
-	if err != nil {
-		slog.Error("Failed to get cookies", "error", err)
-		os.Exit(1)
-	}
-
-	err = saveCookies(cookies)
-	if err != nil {
-		slog.Error("Failed to save cookies", "error", err)
-		os.Exit(1)
-	}
-
-	slog.Info("Cookies saved successfully")
-}
-
-func saveCookies(cookies []*network.Cookie) error {
-	cookiesJSON := make([]Cookie, 0, len(cookies))
-	for _, cookie := range cookies {
-		cookiesJSON = append(cookiesJSON, Cookie{
-			Name:  cookie.Name,
-			Value: cookie.Value,
-		})
-	}
-
-	cookiesBytes, err := json.Marshal(cookiesJSON)
-	if err != nil {
-		return fmt.Errorf("failed to marshal cookies to json: %v", err)
-	}
-
-	err = os.WriteFile("cookies.json", cookiesBytes, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write cookies to file: %v", err)
-	}
-
-	return nil
 }
