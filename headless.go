@@ -62,7 +62,7 @@ func abrirPastaDigitalDoURL(processoCodigo string) string {
 // - headless is a boolean that defines if the browser should be headless or not. For production, it must be true.
 // - processoID example: 1016358-63.2020.8.26.0053
 func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID string) ([]*network.Cookie, error) {
-	logger := slog.With("processID", ctx.Value("processID"))
+	logger := slog.With("processID", processoID)
 
 	logger.Info(fmt.Sprintf("GetCookies headless initialized with the headless option: %v", headless))
 
@@ -171,9 +171,14 @@ func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID 
 }
 
 func navigatePastaVirtualURL(ctx context.Context, pastaVirtualURL string) ([]*network.Cookie, error) {
-	logger := slog.With("processID", ctx.Value("processID"))
+	processID, err := getContextWithProcessID(ctx, ProcessIDContextKey)
+	if err != nil {
+		return nil, fmt.Errorf("error getting processID from context: %w", err)
+	}
+
+	logger := slog.With("processID", processID)
 	logger.Info("navigating to pastaVirtualURL", "url", pastaVirtualURL)
-	err := chromedp.Navigate(pastaVirtualURL).Do(ctx)
+	err = chromedp.Navigate(pastaVirtualURL).Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)
 	}

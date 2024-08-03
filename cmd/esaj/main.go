@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -14,6 +15,13 @@ import (
 	"golang.org/x/net/context"
 )
 
+// avaiableProcessStatus is a slice of strings that contains the status of the process that contains information about the deadline.
+var availableProcessStatus = []string{
+	"Certidão",
+	"Decisão",
+	"Certidão de publicação",
+}
+
 func getEnvWithDefault(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
@@ -21,12 +29,6 @@ func getEnvWithDefault(key, defaultValue string) string {
 	}
 	return value
 }
-
-type contextKey string
-
-var (
-	processIDContextKey = contextKey("processID")
-)
 
 func main() {
 	logger, err := esaj.NewLoggerSlog(esaj.ConfigLogger{
@@ -63,7 +65,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	ctx = context.WithValue(ctx, processIDContextKey, *processID)
+	ctx = context.WithValue(ctx, esaj.ProcessIDContextKey, *processID)
 
 	cookies, err := esaj.GetCookies(ctx, esajLogin, true, *processID)
 	if err != nil {
@@ -87,12 +89,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("processes: %v", "processes [0] param", processes[0].Children[0].ChildernData.Parametros)
+	for _, processo := range processes {
+		if slices.Contains(availableProcessStatus, processo.Data.Title) {
 
-	err = esaj.GetPDF(cookiePDFSession, processes[0].Children[0].ChildernData.Parametros)
-	if err != nil {
-		logger.Error("error getting pdf: %v", "error", err)
-		os.Exit(1)
+			err = esaj.GetPDF(ctx, cookiePDFSession, processo.Children[0].ChildernData)
+			if err != nil {
+				logger.Error("error getting pdf: %v", "error", err)
+			}
+		}
 	}
 
 	logger.Info("pdf downloaded successfully")
