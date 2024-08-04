@@ -208,6 +208,8 @@ func Test_Client_AbrirPastaDigital(t *testing.T) {
 	bodyHTML = strings.ReplaceAll(bodyHTML, "\n", "")
 	bodyHTML = strings.ReplaceAll(bodyHTML, "\t", "")
 
+	// TODO(@perebaj) maybe put it in a golden file
+	// awainting to have more cases like this, to improve the test for big inputs
 	bodyHTML2 := `
 	<html style="overflow: hidden">
 	<head>

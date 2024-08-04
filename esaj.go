@@ -213,6 +213,7 @@ func (ec Client) GetPDF(_ context.Context, processID string, cData ChildrenData)
 	if err != nil {
 		return fmt.Errorf("error writing file: %w", err)
 	}
+	slog.Info(fmt.Sprintf("pdf downloaded successfully and saved in: %s", fileName))
 
 	return nil
 }
