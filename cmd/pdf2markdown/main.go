@@ -69,9 +69,10 @@ func main() {
 			log.Fatal(err)
 		}
 
-		defer func() {
-			_ = writer.Close()
-		}()
+		err = writer.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		markdown, err := ll.PDFToMarkdown(buf, writer.FormDataContentType())
 		if err != nil {

@@ -18,9 +18,9 @@ import (
 
 // AvailableProcessStatus is a slice of strings that contains the status of the process that contains information about the deadline.
 var AvailableProcessStatus = []string{
-	"Certidão",
-	"Decisão",
-	"Certidão de publicação",
+	// "Certidão",
+	// "Decisão",
+	"certidão de publicação",
 }
 
 func getEnvWithDefault(key, defaultValue string) string {
@@ -98,7 +98,7 @@ func main() {
 	}
 
 	for _, processo := range processes {
-		if slices.Contains(AvailableProcessStatus, processo.Data.Title) {
+		if slices.Contains(AvailableProcessStatus, strings.ToLower(processo.Data.Title)) {
 			err = client.GetPDF(ctx, *processID, processo.Children[0].ChildernData)
 			if err != nil {
 				logger.Error("error getting pdf: %v", "error", err)
