@@ -25,7 +25,8 @@ type Config struct {
 type LlamaParser struct {
 	Config Config
 	Client *http.Client
-	URL    string
+	// URL is the base URL of the llama cloud.
+	URL string
 }
 
 // NewLlamaParser create a new instance of LlamaParser

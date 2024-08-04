@@ -114,7 +114,6 @@ func (ec ESAJClient) SearchDo(processID string) (string, error) {
 // Example of cookieSession: "JSESSIONID=EACA3333A48456D7953B6331999A4F80.cas11; K-JSESSIONID-nckcjpip=0E4D006FFD78524DBABA78F02E1633FA"
 func (ec ESAJClient) AbrirPastaProcessoDigital(processCode string) ([]Process, error) {
 	url, err := ec.pastaDigitalURL(processCode)
-	slog.Info("url", "url", url)
 	if err != nil {
 		return nil, fmt.Errorf("error getting pasta digital url: %w", err)
 	}
@@ -153,7 +152,7 @@ func (ec ESAJClient) AbrirPastaProcessoDigital(processCode string) ([]Process, e
 	if scriptContent == "" {
 		return nil, fmt.Errorf("no script content found")
 	}
-	
+
 	regex := regexp.MustCompile(`var requestScope = (.*);`)
 	matches := regex.FindStringSubmatch(scriptContent)
 	if len(matches) == 0 {
@@ -258,7 +257,6 @@ func (ec ESAJClient) pastaDigitalURL(processCode string) (string, error) {
 	link = strings.ReplaceAll(link, "\t", "")
 
 	linkHREF := strings.Split(link, "https://esaj.tjsp.jus.br")
-	slog.Info("linkHREF", "linkHREF", linkHREF)
 	if len(linkHREF) < 2 {
 		return "", fmt.Errorf("no link found")
 	}
