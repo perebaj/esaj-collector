@@ -10,14 +10,6 @@ import (
 	"github.com/perebaj/esaj"
 )
 
-func getEnvWithDefault(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
 func main() {
 	logger, err := esaj.NewLoggerSlog(esaj.ConfigLogger{
 		Level:  esaj.LevelDebug,
@@ -32,8 +24,8 @@ func main() {
 	slog.SetDefault(logger)
 
 	esajLogin := esaj.Login{
-		Username: getEnvWithDefault("ESAJ_USERNAME", ""),
-		Password: getEnvWithDefault("ESAJ_PASSWORD", ""),
+		Username: esaj.GetEnvWithDefault("ESAJ_USERNAME", ""),
+		Password: esaj.GetEnvWithDefault("ESAJ_PASSWORD", ""),
 	}
 
 	if esajLogin.Username == "" || esajLogin.Password == "" {

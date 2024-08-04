@@ -1,3 +1,5 @@
+// Package esaj config.go gather functions to deal with configurations and environment variables.
+// Don't know if is the best name, but it's a good start.
 package esaj
 
 import "os"

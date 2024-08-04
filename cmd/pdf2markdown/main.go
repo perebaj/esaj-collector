@@ -12,20 +12,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/perebaj/esaj"
 	"github.com/perebaj/esaj/llamaparser"
 )
 
-func getEnvWithDefault(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
 func main() {
 	cfg := llamaparser.Config{
-		APIKey: getEnvWithDefault("LLAMA_CLOUD_API_KEY", ""),
+		APIKey: esaj.GetEnvWithDefault("LLAMA_CLOUD_API_KEY", ""),
 	}
 
 	if cfg.APIKey == "" {

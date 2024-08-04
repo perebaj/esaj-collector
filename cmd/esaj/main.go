@@ -17,18 +17,9 @@ import (
 )
 
 // AvailableProcessStatus is a slice of strings that contains the status of the process that contains information about the deadline.
+// Certify that the value is in lower case, because the comparison is case insensitive.
 var AvailableProcessStatus = []string{
-	// "Certidão",
-	// "Decisão",
 	"certidão de publicação",
-}
-
-func getEnvWithDefault(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
 }
 
 func main() {
@@ -44,8 +35,8 @@ func main() {
 	slog.SetDefault(logger)
 
 	esajLogin := esaj.Login{
-		Username: getEnvWithDefault("ESAJ_USERNAME", ""),
-		Password: getEnvWithDefault("ESAJ_PASSWORD", ""),
+		Username: esaj.GetEnvWithDefault("ESAJ_USERNAME", ""),
+		Password: esaj.GetEnvWithDefault("ESAJ_PASSWORD", ""),
 	}
 
 	if esajLogin.Username == "" || esajLogin.Password == "" {
