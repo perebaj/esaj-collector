@@ -33,8 +33,8 @@ func Test_foroNumeroUnificado(t *testing.T) {
 
 // Passing a invalid body to the request response, this should return an error
 // saying that no matches were found.
-func Test_ESAJClient_SearchDo_ErrNoMatchesFound(t *testing.T) {
-	esajClient := NewESAJClient(Config{}, &http.Client{
+func Test_Client_SearchDo_ErrNoMatchesFound(t *testing.T) {
+	esajClient := NewClient(Config{}, &http.Client{
 		Timeout: time.Second * 2,
 	})
 
@@ -60,8 +60,8 @@ func Test_ESAJClient_SearchDo_ErrNoMatchesFound(t *testing.T) {
 	require.Error(t, err)
 }
 
-func Test_ESAJClient_SearchDo(t *testing.T) {
-	esajClient := NewESAJClient(Config{}, &http.Client{
+func Test_Client_SearchDo(t *testing.T) {
+	esajClient := NewClient(Config{}, &http.Client{
 		Timeout: time.Second * 2,
 	})
 
@@ -112,8 +112,8 @@ func Test_ESAJClient_SearchDo(t *testing.T) {
 	assert.Equal(t, wantProcessCode, got)
 }
 
-func Test_ESAJClient_pastaDigitalURL_NoLinkFound(t *testing.T) {
-	esajClient := NewESAJClient(Config{
+func Test_Client_pastaDigitalURL_NoLinkFound(t *testing.T) {
+	esajClient := NewClient(Config{
 		CookieSession: "fake-cookie-session",
 	}, &http.Client{
 		Timeout: time.Second * 2,
@@ -142,8 +142,8 @@ func Test_ESAJClient_pastaDigitalURL_NoLinkFound(t *testing.T) {
 	assert.Equal(t, want, err.Error())
 }
 
-func Test_ESAJClient_pastaDigitalURL_invalidAccess(t *testing.T) {
-	esajClient := NewESAJClient(Config{
+func Test_Client_pastaDigitalURL_invalidAccess(t *testing.T) {
+	esajClient := NewClient(Config{
 		CookieSession: "fake-cookie-session",
 	}, &http.Client{
 		Timeout: time.Second * 2,
@@ -180,17 +180,15 @@ func Test_ESAJClient_pastaDigitalURL_invalidAccess(t *testing.T) {
 	processCode := "PROCESSCODE"
 	_, err := esajClient.pastaDigitalURL(processCode)
 	require.Error(t, err)
-
-	want := "access not validated, verify the COOKIESESSION"
-	assert.Equal(t, want, err.Error())
+	require.ErrorIs(t, err, ErrSessionExpired)
 }
 
-func Test_ESAJClient_AbrirPastaDigital(t *testing.T) {
+func Test_Client_AbrirPastaDigital(t *testing.T) {
 	// the server should mock 2 requests:
 	// /cpopg/abrirPastaDigital.do
 	// /pastadigital/abrirPastaProcessoDigital.do?
 
-	esajClient := NewESAJClient(Config{
+	esajClient := NewClient(Config{
 		CookieSession: "fake-cookie-session",
 	}, &http.Client{
 		Timeout: time.Second * 2,
@@ -297,8 +295,8 @@ func Test_ESAJClient_AbrirPastaDigital(t *testing.T) {
 	assert.Len(t, processes, 1)
 }
 
-func Test_ESAJClient_pastaDigitalURL(t *testing.T) {
-	esajClient := NewESAJClient(Config{
+func Test_Client_pastaDigitalURL(t *testing.T) {
+	esajClient := NewClient(Config{
 		CookieSession: "fake-cookie-session",
 	}, &http.Client{
 		Timeout: time.Second * 2,
@@ -340,6 +338,40 @@ func Test_ESAJClient_pastaDigitalURL(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, got, "/pastadigital/abrirPastaProcessoDigital.do")
+}
+
+func Test_Client_GetPDF_invalidAccess(t *testing.T) {
+	esajClient := NewClient(Config{
+		CookiePDFSession: "fake-cookie-session",
+	}, &http.Client{
+		Timeout: time.Second * 2,
+	})
+
+	bodyPDF := []byte("Sua sessão expirou")
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("expected %s, got %s", http.MethodGet, r.Method)
+		}
+
+		if r.URL.Path != "/pastadigital/getPDF.do" {
+			t.Errorf("expected %s, got %s", "/pastadigital/getPDF.do", r.URL.Path)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(bodyPDF)
+	}))
+
+	esajClient.URL = server.URL
+
+	cData := ChildrenData{
+		Parametros: "nuSeqRecurso=00000&nuProcesso=1004257-52.2024.8.26.0053&cdDocumentoOrigem=0&cdDocumento=294392168&conferenciaDocEdigOriginal=false&nmAlias=PG5JM&origemDocumento=P&nuPagina=1&numInicial=1&tpOrigem=2&cdTipoDocDigital=9500&flOrigem=P&deTipoDocDigital=Peti%E7%E3o+%28Outras%29&cdProcesso=1H000QWJM0000&cdFormatoDoc=9&cdForo=53&idDocumento=294392168-1-1&numFinal=16&sigiloExterno=N",
+		Title:      "Petição (Outras)",
+	}
+
+	processID := "1029989-06.2022.8.26.0053"
+	err := esajClient.GetPDF(context.Background(), processID, cData)
+	require.ErrorIs(t, err, ErrSessionExpired)
 }
 
 func Test_getContextWithProcessID(t *testing.T) {
