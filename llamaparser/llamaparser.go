@@ -29,6 +29,7 @@ type LlamaParser struct {
 	client *http.Client
 }
 
+// Entry struct to hold the parsed pdf file
 type Entry struct {
 	Buf         *bytes.Buffer
 	ContentType string
