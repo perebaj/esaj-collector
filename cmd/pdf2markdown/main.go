@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/perebaj/esaj"
@@ -37,12 +39,40 @@ func main() {
 		os.Exit(1)
 	}
 
+	ch := make(chan llamaparser.Entry)
+
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	go func() {
+		wg.Done()
+		for e := range ch {
+			markdown, err := ll.PDFToMarkdown(e)
+			if err != nil {
+				slog.Error("Error converting pdf to markdown", "error", err)
+			}
+
+			// save the markdown file
+			err = os.WriteFile("tmp/markdown/"+e.EntryPath+".md", []byte(markdown.Markdown), 0644)
+			if err != nil {
+				slog.Error("Error saving markdown file", "error", err)
+			}
+		}
+	}()
+	generateEntries(entries, ch, &wg)
+
+	fmt.Println("Waiting for goroutines to finish")
+	close(ch)
+	wg.Wait()
+}
+
+func generateEntries(entries []fs.DirEntry, ch chan llamaparser.Entry, wg *sync.WaitGroup) {
+	wg.Done()
 	for _, entry := range entries {
 		fmt.Println(entry.Name())
 
-		//read all the bytes from the file
 		buf := new(bytes.Buffer)
-		// read all the bytes from the file
+
 		writer := multipart.NewWriter(buf)
 		fw, err := writer.CreateFormFile("file", "tmp/"+entry.Name())
 		if err != nil {
@@ -67,18 +97,10 @@ func main() {
 			log.Fatal(err)
 		}
 
-		markdown, err := ll.PDFToMarkdown(buf, writer.FormDataContentType())
-		if err != nil {
-			slog.Error("Error converting pdf to markdown", "error", err)
-			os.Exit(1)
-		}
-		// save the markdown to a file
-		err = os.WriteFile("tmp/markdown/"+entry.Name()+".md", []byte(markdown.Markdown), 0644)
-		if err != nil {
-			slog.Error("Error writing markdown to file", "error", err)
-			os.Exit(1)
+		ch <- llamaparser.Entry{
+			Buf:         buf,
+			ContentType: writer.FormDataContentType(),
+			EntryPath:   entry.Name(),
 		}
 	}
-	// ll.PDFToMarkdown()
-
 }

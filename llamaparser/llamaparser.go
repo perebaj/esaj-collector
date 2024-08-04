@@ -29,6 +29,12 @@ type LlamaParser struct {
 	client *http.Client
 }
 
+type Entry struct {
+	Buf         *bytes.Buffer
+	ContentType string
+	EntryPath   string
+}
+
 // NewLlamaParser create a new instance of LlamaParser
 func NewLlamaParser(config Config, client *http.Client) *LlamaParser {
 	return &LlamaParser{
@@ -39,10 +45,10 @@ func NewLlamaParser(config Config, client *http.Client) *LlamaParser {
 }
 
 // PDFToMarkdown convert parsed pdf file in *bytes.Buffer to markdown
-func (ll LlamaParser) PDFToMarkdown(r *bytes.Buffer, contentType string) (*MarkdownResponse, error) {
+func (ll LlamaParser) PDFToMarkdown(e Entry) (*MarkdownResponse, error) {
 	slog.Info("uploading the pdf to llama cloud")
 
-	uploadResponse, err := ll.uploadPDF(r, contentType)
+	uploadResponse, err := ll.uploadPDF(e.Buf, e.ContentType)
 	if err != nil {
 		return nil, fmt.Errorf("error while uploading the pdf to llama cloud. error: %v", err)
 	}
