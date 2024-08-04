@@ -23,17 +23,17 @@ type Config struct {
 
 // LlamaParser struct to hold the llama parser instance
 type LlamaParser struct {
-	Config Config
-	Client *http.Client
 	// URL is the base URL of the llama cloud.
-	URL string
+	URL    string
+	config Config
+	client *http.Client
 }
 
 // NewLlamaParser create a new instance of LlamaParser
 func NewLlamaParser(config Config, client *http.Client) *LlamaParser {
 	return &LlamaParser{
-		Config: config,
-		Client: client,
+		config: config,
+		client: client,
 		URL:    llamaURL,
 	}
 }
@@ -74,9 +74,9 @@ func (ll LlamaParser) uploadPDF(r *bytes.Buffer, contentType string) (*UploadRes
 
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", "Bearer "+ll.Config.APIKey)
+	req.Header.Set("Authorization", "Bearer "+ll.config.APIKey)
 
-	resp, err := ll.Client.Do(req)
+	resp, err := ll.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -110,9 +110,9 @@ func (ll LlamaParser) getMarkdown(jobID string) (*MarkdownResponse, error) {
 	}
 
 	req.Header.Set("accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+ll.Config.APIKey)
+	req.Header.Set("Authorization", "Bearer "+ll.config.APIKey)
 
-	resp, err := ll.Client.Do(req)
+	resp, err := ll.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -149,9 +149,9 @@ func (ll LlamaParser) poolJobStatus(jobID string) (bool, error) {
 		}
 
 		req.Header.Set("accept", "application/json")
-		req.Header.Set("Authorization", "Bearer "+ll.Config.APIKey)
+		req.Header.Set("Authorization", "Bearer "+ll.config.APIKey)
 
-		resp, err := ll.Client.Do(req)
+		resp, err := ll.client.Do(req)
 		if err != nil {
 			return false, err
 		}

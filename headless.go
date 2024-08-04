@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"strings"
 
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/storage"
@@ -20,7 +21,7 @@ type Login struct {
 // GetCookies use a headless browser to simulate the login and all the steps to retrive the cookies from the ESAJ website.
 // - headless is a boolean that defines if the browser should be headless or not. For production, it must be true.
 // - processoID example: 1016358-63.2020.8.26.0053
-func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID string) ([]*network.Cookie, error) {
+func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID string) (string, string, error) {
 	logger := slog.With("processID", processoID)
 
 	logger.Debug(fmt.Sprintf("GetCookies headless initialized with the headless option: %v", headless))
@@ -40,7 +41,7 @@ func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID 
 
 	searchDo, err := searchDoURL(processoID)
 	if err != nil {
-		return nil, fmt.Errorf("bulding the searchDoURL: %v", err)
+		return "", "", fmt.Errorf("bulding the searchDoURL: %v", err)
 	}
 	logger.Debug("searchDoURL", "url", searchDo)
 
@@ -123,10 +124,40 @@ func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID 
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not get cookies: %v", err)
+		return "", "", fmt.Errorf("could not get cookies: %v", err)
 	}
 
-	return cookies, nil
+	cookieSession, cookiePDFSession := parseCookies(cookies)
+
+	return cookieSession, cookiePDFSession, nil
+}
+
+// parseCookies receives a slice of cookies and returns two strings that contains the cookieSession and cookiePDFSession.
+// each one is used in different types of http requests.
+// the first string return is the cookieSession and the second is the cookiePDFSession
+// cookiesSession example: "JSESSIONID=EACA3333A48456D7953B6331999A4F80.cas11; K-JSESSIONID-nckcjpip=0E4D006FFD78524DBABA78F02E1633FA"
+// cookiesPDFSession example: "JSESSION=8A1F3DCE0D4DC510FFF3305E44ABCC4E.pasta3; K-JSESSIONID-phoaambo=0E4D006FFD78524DBABA78F02E1633FA"
+func parseCookies(cookies []*network.Cookie) (string, string) {
+	var cookieSession string
+	var cookiePDFSession string
+	for _, cookie := range cookies {
+		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "cpopg") {
+			cookieSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
+		}
+
+		if strings.Contains(cookie.Name, "K-JSESSIONID-knbbofpc") {
+			cookieSession = fmt.Sprintf("%s %s=%s;", cookieSession, cookie.Name, cookie.Value)
+		}
+
+		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "pasta") {
+			cookiePDFSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
+		}
+
+		if strings.Contains(cookie.Name, "K-JSESSIONID-phoaambo") {
+			cookiePDFSession = fmt.Sprintf("%s %s=%s;", cookiePDFSession, cookie.Name, cookie.Value)
+		}
+	}
+	return cookieSession, cookiePDFSession
 }
 
 // showDoURL is the page that retreive the specific information about a process.

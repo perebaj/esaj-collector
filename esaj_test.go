@@ -34,7 +34,7 @@ func Test_foroNumeroUnificado(t *testing.T) {
 // Passing a invalid body to the request response, this should return an error
 // saying that no matches were found.
 func Test_Client_SearchDo_ErrNoMatchesFound(t *testing.T) {
-	esajClient := NewClient(Config{}, &http.Client{
+	esajClient := New(Config{}, &http.Client{
 		Timeout: time.Second * 2,
 	})
 
@@ -56,12 +56,12 @@ func Test_Client_SearchDo_ErrNoMatchesFound(t *testing.T) {
 	esajClient.URL = server.URL
 
 	processID := "1029989-06.2022.8.26.0053"
-	_, err := esajClient.SearchDo(processID)
+	_, err := esajClient.searchDo(processID)
 	require.Error(t, err)
 }
 
 func Test_Client_SearchDo(t *testing.T) {
-	esajClient := NewClient(Config{}, &http.Client{
+	esajClient := New(Config{}, &http.Client{
 		Timeout: time.Second * 2,
 	})
 
@@ -105,7 +105,7 @@ func Test_Client_SearchDo(t *testing.T) {
 	esajClient.URL = server.URL
 
 	processID := "1029989-06.2022.8.26.0053"
-	got, err := esajClient.SearchDo(processID)
+	got, err := esajClient.searchDo(processID)
 	require.NoError(t, err)
 
 	wantProcessCode := "THISONE"
@@ -113,7 +113,7 @@ func Test_Client_SearchDo(t *testing.T) {
 }
 
 func Test_Client_pastaDigitalURL_NoLinkFound(t *testing.T) {
-	esajClient := NewClient(Config{
+	esajClient := New(Config{
 		CookieSession: "fake-cookie-session",
 	}, &http.Client{
 		Timeout: time.Second * 2,
@@ -143,7 +143,7 @@ func Test_Client_pastaDigitalURL_NoLinkFound(t *testing.T) {
 }
 
 func Test_Client_pastaDigitalURL_invalidAccess(t *testing.T) {
-	esajClient := NewClient(Config{
+	esajClient := New(Config{
 		CookieSession: "fake-cookie-session",
 	}, &http.Client{
 		Timeout: time.Second * 2,
@@ -188,7 +188,7 @@ func Test_Client_AbrirPastaDigital(t *testing.T) {
 	// /cpopg/abrirPastaDigital.do
 	// /pastadigital/abrirPastaProcessoDigital.do?
 
-	esajClient := NewClient(Config{
+	esajClient := New(Config{
 		CookieSession: "fake-cookie-session",
 	}, &http.Client{
 		Timeout: time.Second * 2,
@@ -291,14 +291,14 @@ func Test_Client_AbrirPastaDigital(t *testing.T) {
 
 	processCode := "PROCESSCODE"
 
-	processes, err := esajClient.AbrirPastaProcessoDigital(processCode)
+	processes, err := esajClient.abrirPastaProcessoDigital(processCode)
 	require.NoError(t, err)
 
 	assert.Len(t, processes, 1)
 }
 
 func Test_Client_pastaDigitalURL(t *testing.T) {
-	esajClient := NewClient(Config{
+	esajClient := New(Config{
 		CookieSession: "fake-cookie-session",
 	}, &http.Client{
 		Timeout: time.Second * 2,
@@ -343,7 +343,7 @@ func Test_Client_pastaDigitalURL(t *testing.T) {
 }
 
 func Test_Client_GetPDF_invalidAccess(t *testing.T) {
-	esajClient := NewClient(Config{
+	esajClient := New(Config{
 		CookiePDFSession: "fake-cookie-session",
 	}, &http.Client{
 		Timeout: time.Second * 2,

@@ -75,16 +75,16 @@ END TEXT
 
 // Client is the client to interact with the OpenAI API
 type Client struct {
-	Client *openai.Client
-	Config Config
+	client *openai.Client
+	config Config
 }
 
 // New initializes a new OpenAI client
 func New(cfg Config) *Client {
 	c := openai.NewClient(cfg.APIToken)
 	return &Client{
-		Client: c,
-		Config: cfg,
+		client: c,
+		config: cfg,
 	}
 }
 
@@ -126,7 +126,7 @@ func (c *Client) ParsePublication(ctx context.Context, text string) (*ParsedPubl
 		},
 	}
 
-	resp, err := c.Client.CreateChatCompletion(ctx, request)
+	resp, err := c.client.CreateChatCompletion(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("error creating chat completion: %v", err)
 	}

@@ -3,24 +3,14 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"slices"
-	"strings"
 	"time"
 
-	"github.com/chromedp/cdproto/network"
 	"github.com/perebaj/esaj"
 	"golang.org/x/net/context"
 )
-
-// AvailableProcessStatus is a slice of strings that contains the status of the process that contains information about the deadline.
-// Certify that the value is in lower case, because the comparison is case insensitive.
-var AvailableProcessStatus = []string{
-	"certidão de publicação",
-}
 
 func main() {
 	logger, err := esaj.NewLoggerSlog(esaj.ConfigLogger{
@@ -59,71 +49,24 @@ func main() {
 
 	ctx = context.WithValue(ctx, esaj.ProcessIDContextKey, *processID)
 
-	cookies, err := esaj.GetCookies(ctx, esajLogin, true, *processID)
+	cookieSession, cookiePDFSession, err := esaj.GetCookies(ctx, esajLogin, true, *processID)
 	if err != nil {
 		logger.Error("error getting cookies: %v", "error", err)
 		os.Exit(1)
 	}
 
-	cookieSession, cookiePDFSession := parseCookies(cookies)
-
-	client := esaj.NewClient(esaj.Config{
+	client := esaj.New(esaj.Config{
 		CookieSession:    cookieSession,
 		CookiePDFSession: cookiePDFSession,
 	}, &http.Client{
 		Timeout: 60 * time.Second,
 	})
 
-	processCode, err := client.SearchDo(*processID)
+	err = client.Run(ctx, *processID)
 	if err != nil {
-		logger.Error("error searching process", "error", err)
+		logger.Error("error running the esaj parser", "error", err)
 		os.Exit(1)
 	}
 
-	logger.Info(fmt.Sprintf("processCode was found: %s for the processID: %s", processCode, *processID))
-
-	processes, err := client.AbrirPastaProcessoDigital(processCode)
-	if err != nil {
-		logger.Error("error opening digital folder", "error", err)
-		os.Exit(1)
-	}
-
-	for _, processo := range processes {
-		if slices.Contains(AvailableProcessStatus, strings.ToLower(processo.Data.Title)) {
-			err = client.GetPDF(ctx, *processID, processo.Children[0].ChildernData)
-			if err != nil {
-				logger.Error("error getting pdf: %v", "error", err)
-			}
-		}
-	}
-
-	logger.Info("pdf downloaded successfully")
-}
-
-// parseCookies receives a slice of cookies and returns two strings that contains the cookieSession and cookiePDFSession.
-// each one is used in different types of http requests.
-// the first string return is the cookieSession and the second is the cookiePDFSession
-// cookiesSession example: "JSESSIONID=EACA3333A48456D7953B6331999A4F80.cas11; K-JSESSIONID-nckcjpip=0E4D006FFD78524DBABA78F02E1633FA"
-// cookiesPDFSession example: "JSESSION=8A1F3DCE0D4DC510FFF3305E44ABCC4E.pasta3; K-JSESSIONID-phoaambo=0E4D006FFD78524DBABA78F02E1633FA"
-func parseCookies(cookies []*network.Cookie) (string, string) {
-	var cookieSession string
-	var cookiePDFSession string
-	for _, cookie := range cookies {
-		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "cpopg") {
-			cookieSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
-		}
-
-		if strings.Contains(cookie.Name, "K-JSESSIONID-knbbofpc") {
-			cookieSession = fmt.Sprintf("%s %s=%s;", cookieSession, cookie.Name, cookie.Value)
-		}
-
-		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "pasta") {
-			cookiePDFSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
-		}
-
-		if strings.Contains(cookie.Name, "K-JSESSIONID-phoaambo") {
-			cookiePDFSession = fmt.Sprintf("%s %s=%s;", cookiePDFSession, cookie.Name, cookie.Value)
-		}
-	}
-	return cookieSession, cookiePDFSession
+	logger.Info("all pdfs were downloaded successfully")
 }
