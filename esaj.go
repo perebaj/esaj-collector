@@ -129,7 +129,7 @@ func (ec Client) AbrirPastaProcessoDigital(processCode string) ([]Process, error
 		return nil, fmt.Errorf("error getting pasta digital url: %w", err)
 	}
 
-	slog.Info(fmt.Sprintf("fetching abrir pasta processo digital url: %s", ec.URL+url))
+	slog.Debug(fmt.Sprintf("fetching abrir pasta processo digital url: %s", ec.URL+url))
 	req, err := http.NewRequest("GET", ec.URL+url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)

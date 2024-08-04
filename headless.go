@@ -23,7 +23,7 @@ type Login struct {
 func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID string) ([]*network.Cookie, error) {
 	logger := slog.With("processID", processoID)
 
-	logger.Info(fmt.Sprintf("GetCookies headless initialized with the headless option: %v", headless))
+	logger.Debug(fmt.Sprintf("GetCookies headless initialized with the headless option: %v", headless))
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
@@ -42,7 +42,7 @@ func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID 
 	if err != nil {
 		return nil, fmt.Errorf("bulding the searchDoURL: %v", err)
 	}
-	logger.Info("searchDoURL", "url", searchDo)
+	logger.Debug("searchDoURL", "url", searchDo)
 
 	err = chromedp.Run(ctx,
 		chromedp.Navigate(`https://esaj.tjsp.jus.br/sajcas/login`),
@@ -177,7 +177,7 @@ func navigatePastaVirtualURL(ctx context.Context, pastaVirtualURL string) ([]*ne
 	}
 
 	logger := slog.With("processID", processID)
-	logger.Info("navigating to pastaVirtualURL", "url", pastaVirtualURL)
+	logger.Debug("navigating to pastaVirtualURL", "url", pastaVirtualURL)
 	err = chromedp.Navigate(pastaVirtualURL).Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)

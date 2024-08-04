@@ -33,7 +33,7 @@ func getEnvWithDefault(key, defaultValue string) string {
 
 func main() {
 	logger, err := esaj.NewLoggerSlog(esaj.ConfigLogger{
-		Level:  esaj.LevelDebug,
+		Level:  esaj.LevelInfo,
 		Format: esaj.FormatLogFmt,
 	})
 	if err != nil {
@@ -99,7 +99,6 @@ func main() {
 
 	for _, processo := range processes {
 		if slices.Contains(AvailableProcessStatus, processo.Data.Title) {
-
 			err = client.GetPDF(ctx, *processID, processo.Children[0].ChildernData)
 			if err != nil {
 				logger.Error("error getting pdf: %v", "error", err)

@@ -63,7 +63,7 @@ func (ll LlamaParser) PDFToMarkdown(r *bytes.Buffer, contentType string) (*Markd
 
 	slog.Info("markdown retrived successfully", "job_id", uploadResponse.ID)
 
-	return &markdownResp, nil
+	return markdownResp, nil
 }
 
 func (ll LlamaParser) uploadPDF(r *bytes.Buffer, contentType string) (*UploadResponse, error) {
@@ -103,10 +103,10 @@ func (ll LlamaParser) uploadPDF(r *bytes.Buffer, contentType string) (*UploadRes
 	return &uploadResponse, nil
 }
 
-func (ll LlamaParser) getMarkdown(jobID string) (MarkdownResponse, error) {
+func (ll LlamaParser) getMarkdown(jobID string) (*MarkdownResponse, error) {
 	req, err := http.NewRequest("GET", ll.URL+"/api/parsing/job/"+jobID+"/result/markdown", nil)
 	if err != nil {
-		return MarkdownResponse{}, err
+		return nil, err
 	}
 
 	req.Header.Set("accept", "application/json")
@@ -114,11 +114,11 @@ func (ll LlamaParser) getMarkdown(jobID string) (MarkdownResponse, error) {
 
 	resp, err := ll.Client.Do(req)
 	if err != nil {
-		return MarkdownResponse{}, err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return MarkdownResponse{}, err
+		return nil, err
 	}
 
 	defer func() {
@@ -127,16 +127,16 @@ func (ll LlamaParser) getMarkdown(jobID string) (MarkdownResponse, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return MarkdownResponse{}, err
+		return nil, err
 	}
 
 	var markdownResponse MarkdownResponse
 	err = json.Unmarshal(body, &markdownResponse)
 	if err != nil {
-		return MarkdownResponse{}, err
+		return nil, err
 	}
 
-	return markdownResponse, nil
+	return &markdownResponse, nil
 }
 
 // poolJobStatus validate the job status until it is completed
