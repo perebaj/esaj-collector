@@ -3,20 +3,16 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
-	"slices"
-	"strings"
 	"time"
 
-	"github.com/chromedp/cdproto/network"
 	"github.com/perebaj/esaj"
 	"golang.org/x/net/context"
 )
 
-// avaiableProcessStatus is a slice of strings that contains the status of the process that contains information about the deadline.
-var availableProcessStatus = []string{
+// AvailableProcessStatus is a slice of strings that contains the status of the process that contains information about the deadline.
+var AvailableProcessStatus = []string{
 	"Certidão",
 	"Decisão",
 	"Certidão de publicação",
@@ -67,39 +63,39 @@ func main() {
 
 	ctx = context.WithValue(ctx, esaj.ProcessIDContextKey, *processID)
 
-	cookies, err := esaj.GetCookies(ctx, esajLogin, true, *processID)
+	_, err = esaj.GetCookies(ctx, esajLogin, true, *processID)
 	if err != nil {
 		logger.Error("error getting cookies: %v", "error", err)
 		os.Exit(1)
 	}
 
-	cookieSession, cookiePDFSession := parseCookies(cookies)
+	// cookieSession, cookiePDFSession := parseCookies(cookies)
 
-	processCode, err := esaj.SearchDo(cookieSession, *processID)
-	if err != nil {
-		logger.Error("error searching process", "error", err)
-		os.Exit(1)
-	}
+	// processCode, err := esaj.SearchDo(cookieSession, *processID)
+	// if err != nil {
+	// 	logger.Error("error searching process", "error", err)
+	// 	os.Exit(1)
+	// }
 
-	logger.Info(fmt.Sprintf("processCode was found: %s for the processID: %s", processCode, *processID))
+	// logger.Info(fmt.Sprintf("processCode was found: %s for the processID: %s", processCode, *processID))
 
-	processes, err := esaj.AbrirPastaProcessoDigital(cookieSession, processCode)
-	if err != nil {
-		logger.Error("error opening digital folder", "error", err)
-		os.Exit(1)
-	}
+	// processes, err := esaj.AbrirPastaProcessoDigital(cookieSession, processCode)
+	// if err != nil {
+	// 	logger.Error("error opening digital folder", "error", err)
+	// 	os.Exit(1)
+	// }
 
-	for _, processo := range processes {
-		if slices.Contains(availableProcessStatus, processo.Data.Title) {
+	// for _, processo := range processes {
+	// 	if slices.Contains(availableProcessStatus, processo.Data.Title) {
 
-			err = esaj.GetPDF(ctx, cookiePDFSession, processo.Children[0].ChildernData)
-			if err != nil {
-				logger.Error("error getting pdf: %v", "error", err)
-			}
-		}
-	}
+	// 		err = esaj.GetPDF(ctx, cookiePDFSession, processo.Children[0].ChildernData)
+	// 		if err != nil {
+	// 			logger.Error("error getting pdf: %v", "error", err)
+	// 		}
+	// 	}
+	// }
 
-	logger.Info("pdf downloaded successfully")
+	// logger.Info("pdf downloaded successfully")
 }
 
 // parseCookies receives a slice of cookies and returns two strings that contains the cookieSession and cookiePDFSession.
@@ -107,25 +103,25 @@ func main() {
 // the first string return is the cookieSession and the second is the cookiePDFSession
 // cookiesSession example: "JSESSIONID=EACA3333A48456D7953B6331999A4F80.cas11; K-JSESSIONID-nckcjpip=0E4D006FFD78524DBABA78F02E1633FA"
 // cookiesPDFSession example: "JSESSION=8A1F3DCE0D4DC510FFF3305E44ABCC4E.pasta3; K-JSESSIONID-phoaambo=0E4D006FFD78524DBABA78F02E1633FA"
-func parseCookies(cookies []*network.Cookie) (string, string) {
-	var cookieSession string
-	var cookiePDFSession string
-	for _, cookie := range cookies {
-		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "cpopg") {
-			cookieSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
-		}
+// func parseCookies(cookies []*network.Cookie) (string, string) {
+// 	var cookieSession string
+// 	var cookiePDFSession string
+// 	for _, cookie := range cookies {
+// 		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "cpopg") {
+// 			cookieSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
+// 		}
 
-		if strings.Contains(cookie.Name, "K-JSESSIONID-knbbofpc") {
-			cookieSession = fmt.Sprintf("%s %s=%s;", cookieSession, cookie.Name, cookie.Value)
-		}
+// 		if strings.Contains(cookie.Name, "K-JSESSIONID-knbbofpc") {
+// 			cookieSession = fmt.Sprintf("%s %s=%s;", cookieSession, cookie.Name, cookie.Value)
+// 		}
 
-		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "pasta") {
-			cookiePDFSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
-		}
+// 		if cookie.Name == "JSESSIONID" && strings.Contains(cookie.Value, "pasta") {
+// 			cookiePDFSession = fmt.Sprintf("%s=%s;", cookie.Name, cookie.Value)
+// 		}
 
-		if strings.Contains(cookie.Name, "K-JSESSIONID-phoaambo") {
-			cookiePDFSession = fmt.Sprintf("%s %s=%s;", cookiePDFSession, cookie.Name, cookie.Value)
-		}
-	}
-	return cookieSession, cookiePDFSession
-}
+// 		if strings.Contains(cookie.Name, "K-JSESSIONID-phoaambo") {
+// 			cookiePDFSession = fmt.Sprintf("%s %s=%s;", cookiePDFSession, cookie.Name, cookie.Value)
+// 		}
+// 	}
+// 	return cookieSession, cookiePDFSession
+// }

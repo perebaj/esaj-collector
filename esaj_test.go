@@ -274,12 +274,12 @@ func Test_ESAJClient_AbrirPastaDigital(t *testing.T) {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/cpopg/abrirPastaDigital.do", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/cpopg/abrirPastaDigital.do", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(bodyHTML))
 	})
 
-	mux.HandleFunc("/pastadigital/abrirPastaProcessoDigital.do", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/pastadigital/abrirPastaProcessoDigital.do", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(bodyHTML2))
 	})
