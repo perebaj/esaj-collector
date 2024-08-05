@@ -1,4 +1,5 @@
 GOLANGCI_LINT_VERSION = v1.59.1
+export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
 
 ## Run the esaj service from cmd/esaj/main.go
 .PHONY: esaj
@@ -21,7 +22,7 @@ test:
 
 ## Run linter
 .PHONY: lint
-lint: ## Run linter
+lint:
 	@echo "Running linter..."
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./... -v
 
@@ -30,6 +31,34 @@ lint: ## Run linter
 coverage:
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
+
+## create a new migration file. Usage `make migration/create name=<migration_name>`
+.PHONY: migration/create
+migration/create:
+	@echo "Creating a new migration..."
+	@go run github.com/golang-migrate/migrate/v4/cmd/migrate create -ext sql -dir postgres/migrations -seq $(name)
+
+## Run integration tests. Usage `make integration-test` or `make integration-test testcase="TestFunctionName"` to run an isolated tests
+.PHONY: integration-test
+integration-test:
+	@echo "Running integration tests..."
+	if [ -n "$(testcase)" ]; then \
+		go test ./... -tags integration -timeout 10s -v -run="^$(testcase)$$" ; \
+	else \
+		go test ./... -tags integration -timeout 10s; \
+	fi
+
+## Start the development server
+.PHONY: dev/start
+dev/start:
+	@echo "Starting the development server..."
+	@docker-compose up -d
+
+ ## Stop the development server
+.PHONY: dev/stop
+dev/stop:
+	@echo "Stopping the development server..."
+	@docker-compose down
 
 ## Display help for all targets
 .PHONY: help
