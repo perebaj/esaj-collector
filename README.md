@@ -4,7 +4,9 @@
 
 `make help`
 
+# Environment Variables
 
-# Run esaj-collector
-
-`go run cmd/esaj/main.go --processID=0000000-00.0000.0.00.0000`
+- ESAJ_USERNAME
+- ESAJ_PASSWORD
+- LLAMA_CLOUD_API_KEY
+- OPENAI_API_TOKEN
