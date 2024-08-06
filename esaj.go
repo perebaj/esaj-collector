@@ -309,6 +309,10 @@ func (ec Client) showDo(processID, processForo, processCode string) (*ProcessBas
 		parties = append(parties, p)
 	})
 
+	if len(parties) < 2 {
+		return nil, fmt.Errorf("error parsing parties")
+	}
+
 	pBasic := &ProcessBasicInfo{
 		ProcessID:   processID,
 		ProcessForo: processForo,

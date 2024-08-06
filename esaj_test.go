@@ -396,3 +396,27 @@ func Test_getContextWithProcessID(t *testing.T) {
 
 	assert.Equal(t, processID, got)
 }
+
+// TODO(@perebaj) improve this test case
+func Test_Client_showDo(t *testing.T) {
+	c := New(Config{
+		CookieSession: "test",
+	}, &http.Client{})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("expected %s, got %s", http.MethodGet, r.Method)
+		}
+
+		if r.URL.Path != "/cpopg/show.do" {
+			t.Errorf("expected %s, got %s", "/cpopg/show.do", r.URL.Path)
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	c.URL = server.URL
+
+	_, err := c.showDo("1007573-30.2024.8.26.0229", "0229", "6D0008MAZ0000")
+	require.Error(t, err)
+}
