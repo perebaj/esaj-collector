@@ -310,13 +310,13 @@ func (ec Client) showDo(processID, processForo, processCode string) (*ProcessBas
 	})
 
 	pBasic := &ProcessBasicInfo{
-		ProcessID:     processID,
-		ProcessForo:   processForo,
-		Class:         processClass,
-		Vara:          vara,
-		Judge:         judge,
-		ForoName:      foroName,
-		ProcessCodigo: processCode,
+		ProcessID:   processID,
+		ProcessForo: processForo,
+		Class:       processClass,
+		Vara:        vara,
+		Judge:       judge,
+		ForoName:    foroName,
+		ProcessCode: processCode,
 		// TODO(@perebaj) maybe im accessing an index that does not exist. Or maybe the parties are not in the correct order.
 		Claimant:  parties[0],
 		Defendant: parties[1],

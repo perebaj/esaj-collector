@@ -65,18 +65,22 @@ type ChildrenData struct {
 
 // ProcessBasicInfo as the name says, is the basic information of a process.
 type ProcessBasicInfo struct {
+	// ProcessID example: "1007573-30.2024.8.26.0229"
 	ProcessID string
 	// ProcessForo example: "0053"
 	ProcessForo string
 	// ForoName example: "Tribunal de Justiça do Estado de São Paulo"/"Foro de Hortolândia"
-	ForoName      string
-	ProcessCodigo string
-	Judge         string
+	ForoName string
+	// ProcessCode. Example: 6D0008MAZ0000
+	ProcessCode string
+	// Judge...
+	Judge string
 	// Class is the class of the process. Example: "Habilitação de Crédito"
 	Class string
 	// Claimant is who is claiming for something in the process.
 	Claimant string
 	// Defendant is who is being claimed in the process.
 	Defendant string
+	// Vara is the court where the process is being processed.
 	Vara string
 }
