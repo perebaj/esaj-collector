@@ -1,5 +1,5 @@
 // Package llamaparser Package llamaparser provides a client to interact with the Llama Cloud API.
-// Like pooling the job status and retrive the markdown file from the parsed pdf.
+// The Llama Cloud API allows you to parse PDF files and extract the text from them.
 package llamaparser
 
 import (

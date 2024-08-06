@@ -1,5 +1,6 @@
 // Package esaj from esaj.go is a package that provides functions to interact with the TJSP website.
 // The function names follow the same naming convention as the original API.
+// This package depends of some cookies to work properly, those cookies can only be obtained by using a headless browser.
 package esaj
 
 import (
