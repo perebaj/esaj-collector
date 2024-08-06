@@ -247,6 +247,86 @@ func (ec Client) GetPDF(_ context.Context, processID string, cData ChildrenData)
 	return nil
 }
 
+// showDo fetch the html page of the process that contains basic information about legal action.
+func (ec Client) showDo(processID, processForo, processCode string) (*ProcessBasicInfo, error) {
+	slog.Debug("fetching show do page", "processID", processID, "processForo", processForo, "processCode", processCode)
+
+	url := ec.URL + fmt.Sprintf("/cpopg/show.do?processo.codigo=%s&processo.foro=%s&processo.numero=%s",
+		processCode,
+		processForo,
+		processID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+	req.Header.Set("Cookie", ec.Config.CookieSession)
+
+	resp, err := ec.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error doing request: %w", err)
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	bodyByte, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading body: %w", err)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyByte)))
+	if err != nil {
+		return nil, fmt.Errorf("error initializing goquery new document from reader: %w", err)
+	}
+
+	var processClass string
+	doc.Find("#classeProcesso").Each(func(_ int, s *goquery.Selection) {
+		processClass = s.Text()
+	})
+
+	var foroName string
+	doc.Find("#foroProcesso").Each(func(_ int, s *goquery.Selection) {
+		foroName = s.Text()
+	})
+
+	var vara string
+	doc.Find("#varaProcesso").Each(func(_ int, s *goquery.Selection) {
+		vara = s.Text()
+	})
+
+	var judge string
+	doc.Find("#juizProcesso").Each(func(_ int, s *goquery.Selection) {
+		judge = s.Text()
+	})
+
+	var parties []string
+	doc.Find("td.nomeParteEAdvogado").Each(func(_ int, s *goquery.Selection) {
+		p := s.Text()
+		r := strings.NewReplacer("\n", "", "\t", "")
+		p = r.Replace(p)
+		parties = append(parties, p)
+	})
+
+	pBasic := &ProcessBasicInfo{
+		ProcessID:     processID,
+		ProcessForo:   processForo,
+		Class:         processClass,
+		Vara:          vara,
+		Judge:         judge,
+		ForoName:      foroName,
+		ProcessCodigo: processCode,
+		// TODO(@perebaj) maybe im accessing an index that does not exist. Or maybe the parties are not in the correct order.
+		Claimant:  parties[0],
+		Defendant: parties[1],
+	}
+
+	slog.Debug("parsed process basic info", "pBasic", pBasic)
+
+	return pBasic, nil
+}
+
 // pastaDigitalURL fetch the html page and return the URL where the pdf documents can be downloaded.
 // - processCode: The process code in the format: 1H000H91J0000
 func (ec Client) pastaDigitalURL(processCode string) (string, error) {
