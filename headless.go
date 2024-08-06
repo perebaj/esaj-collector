@@ -1,3 +1,4 @@
+// Package esaj headless.go simulate the login and all the steps to retrive the cookies from the ESAJ website using a headless browser.
 package esaj
 
 import (
