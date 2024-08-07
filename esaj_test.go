@@ -420,3 +420,58 @@ func Test_Client_showDo(t *testing.T) {
 	_, err := c.showDo("1007573-30.2024.8.26.0229", "0229", "6D0008MAZ0000")
 	require.Error(t, err)
 }
+
+func Test_Client_searchByOAB(t *testing.T) {
+	c := New(Config{
+		CookieSession: "test",
+	}, &http.Client{})
+
+	bodyHTML := `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Process Links</title>
+</head>
+<body>
+<h1>Process List</h1>
+<ul>
+<li><a class="linkProcesso" href="http://example.com/process1">Process 1</a></li>
+<li><a class="linkProcesso" href="http://example.com/process2">Process 2</a></li>
+</ul>
+</body>
+</html>
+`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("expected %s, got %s", http.MethodGet, r.Method)
+		}
+
+		if r.URL.Path != "/cpopg/search.do" {
+			t.Errorf("expected %s, got %s", "/cpopg/search.do", r.URL.Path)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(bodyHTML))
+	}))
+
+	c.URL = server.URL
+
+	got, err := c.searchByOAB("123456")
+	require.NoError(t, err)
+
+	want := []processSeed{
+		{
+			processID: "Process 1",
+			seedURL:   "http://example.com/process1",
+		},
+		{
+			processID: "Process 2",
+			seedURL:   "http://example.com/process2",
+		},
+	}
+
+	assert.Equal(t, want, got)
+}

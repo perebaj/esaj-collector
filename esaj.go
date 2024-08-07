@@ -331,6 +331,59 @@ func (ec Client) showDo(processID, processForo, processCode string) (*ProcessBas
 	return pBasic, nil
 }
 
+type processSeed struct {
+	processID string
+	seedURL   string
+}
+
+// serachByOAB is a seeder function that searches for all processes related to a specific OAB number.
+func (ec Client) searchByOAB(oab string) ([]processSeed, error) {
+	url := ec.URL + fmt.Sprintf("/cpopg/search.do?conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", oab)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	req.Header.Set("Cookie", ec.Config.CookieSession)
+
+	resp, err := ec.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error doing request: %w", err)
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	bodyByte, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading body: %w", err)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyByte)))
+	if err != nil {
+		return nil, fmt.Errorf("error initializing goquery new document from reader: %w", err)
+	}
+
+	var seeds []processSeed
+	doc.Find("a.linkProcesso").Each(func(_ int, s *goquery.Selection) {
+		href, _ := s.Attr("href")
+		processID := s.Text()
+		seeds = append(seeds, processSeed{
+			processID: processID,
+			seedURL:   href,
+		})
+	})
+
+	if len(seeds) == 0 {
+		return nil, fmt.Errorf("no seeds were found when searching by OAB number")
+	}
+
+	return seeds, nil
+
+}
+
 // pastaDigitalURL fetch the html page and return the URL where the pdf documents can be downloaded.
 // - processCode: The process code in the format: 1H000H91J0000
 func (ec Client) pastaDigitalURL(processCode string) (string, error) {
