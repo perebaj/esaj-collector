@@ -381,7 +381,6 @@ func (ec Client) searchByOAB(oab string) ([]processSeed, error) {
 	}
 
 	return seeds, nil
-
 }
 
 // pastaDigitalURL fetch the html page and return the URL where the pdf documents can be downloaded.

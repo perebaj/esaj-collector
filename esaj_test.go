@@ -459,10 +459,10 @@ func Test_Client_searchByOAB(t *testing.T) {
 
 	c.URL = server.URL
 
-	got, err := c.searchByOAB("123456")
+	actual, err := c.searchByOAB("123456")
 	require.NoError(t, err)
 
-	want := []processSeed{
+	expected := []processSeed{
 		{
 			processID: "Process 1",
 			seedURL:   "http://example.com/process1",
@@ -473,5 +473,5 @@ func Test_Client_searchByOAB(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, want, got)
+	assert.Equal(t, expected, actual)
 }
