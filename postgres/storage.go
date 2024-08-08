@@ -9,8 +9,8 @@ type Storage struct {
 }
 
 // NewStorage creates a new storage
-func NewStorage(db *sqlx.DB) *Storage {
-	return &Storage{
+func NewStorage(db *sqlx.DB) Storage {
+	return Storage{
 		db: db,
 	}
 }
