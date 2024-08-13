@@ -14,6 +14,7 @@ import (
 	"os"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -331,30 +332,29 @@ func (ec Client) showDo(processID, processForo, processCode string) (*ProcessBas
 	return pBasic, nil
 }
 
-type processSeed struct {
+// ProcessSeed is a struct that contains the processID and the URL of the process.
+type ProcessSeed struct {
 	processID string
 	seedURL   string
 }
 
-// serachByOAB is a seeder function that searches for all processes related to a specific OAB number.
-func (ec Client) searchByOAB(oab string) ([]processSeed, error) {
-	url := ec.URL + fmt.Sprintf("/cpopg/search.do?conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", oab)
+// SearchByOAB is a seeder function that searches for all processes related to a specific OAB number.
+// to get all processes hrefs its not necessary to have a valid session.
+func (ec Client) SearchByOAB(oab string) ([]ProcessSeed, error) {
+	// paginaConsulta=1000000000 is a way to find the last page, so we can iterate over all pages.
+	// using this output as a range limit.
+	url := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=1000000000&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", oab)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	req.Header.Set("Cookie", ec.Config.CookieSession)
-
+	slog.Info("searching by all process related to OAB", "oab", oab, "url", url)
 	resp, err := ec.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error doing request: %w", err)
 	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 
 	bodyByte, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -362,22 +362,65 @@ func (ec Client) searchByOAB(oab string) ([]processSeed, error) {
 	}
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyByte)))
+
 	if err != nil {
 		return nil, fmt.Errorf("error initializing goquery new document from reader: %w", err)
 	}
 
-	var seeds []processSeed
-	doc.Find("a.linkProcesso").Each(func(_ int, s *goquery.Selection) {
-		href, _ := s.Attr("href")
-		processID := s.Text()
-		seeds = append(seeds, processSeed{
-			processID: processID,
-			seedURL:   href,
-		})
+	var penultimatePage string
+	doc.Find("a.paginacao").Last().Each(func(_ int, s *goquery.Selection) {
+		txt := s.Text()
+		penultimatePage = txt
 	})
 
-	if len(seeds) == 0 {
-		return nil, fmt.Errorf("no seeds were found when searching by OAB number")
+	replacer := strings.NewReplacer("\n", "", "\t", "", " ", "")
+	penultimatePage = replacer.Replace(penultimatePage)
+
+	//@TODO treat the case when there is only one page.
+	penultimatePageInt, err := strconv.Atoi(penultimatePage)
+	if err != nil {
+		return nil, fmt.Errorf("error converting text to number: %w", err)
+	}
+
+	lastaPage := penultimatePageInt + 1
+	slog.Info("last page found", "lastPage", lastaPage)
+
+	// iterate over all pages to get all processes hrefs.
+	var seeds []ProcessSeed
+	for i := range lastaPage {
+		url := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=%d&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", i, oab)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error creating request: %w", err)
+		}
+
+		req.Header.Set("Cookie", ec.Config.CookieSession)
+
+		resp, err := ec.Client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("error doing request: %w", err)
+		}
+
+		bodyByte, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("error reading body: %w", err)
+		}
+
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyByte)))
+		if err != nil {
+			return nil, fmt.Errorf("error initializing goquery new document from reader: %w", err)
+		}
+
+		doc.Find("a.linkProcesso").Each(func(_ int, s *goquery.Selection) {
+			href, _ := s.Attr("href")
+			processID := s.Text()
+			processID = replacer.Replace(processID)
+			slog.Info("process found", "processID", processID, "href", href, "oab", oab, "page", i)
+			seeds = append(seeds, ProcessSeed{
+				processID: processID,
+				seedURL:   ec.URL + href,
+			})
+		})
 	}
 
 	return seeds, nil
