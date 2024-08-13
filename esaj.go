@@ -332,10 +332,11 @@ func (ec Client) showDo(processID, processForo, processCode string) (*ProcessBas
 	return pBasic, nil
 }
 
-// ProcessSeed is a struct that contains the processID and the URL of the process.
+// ProcessSeed is the start point to scrape all processes related to a specific OAB number
 type ProcessSeed struct {
-	processID string
-	seedURL   string
+	ProcessID string `db:"process_id" json:"process_id"`
+	OAB       string `db:"oab" json:"oab"`
+	URL       string `db:"url" json:"url"`
 }
 
 // SearchByOAB is a seeder function that searches for all processes related to a specific OAB number.
@@ -417,8 +418,9 @@ func (ec Client) SearchByOAB(oab string) ([]ProcessSeed, error) {
 			processID = replacer.Replace(processID)
 			slog.Info("process found", "processID", processID, "href", href, "oab", oab, "page", i)
 			seeds = append(seeds, ProcessSeed{
-				processID: processID,
-				seedURL:   ec.URL + href,
+				ProcessID: processID,
+				URL:       ec.URL + href,
+				OAB:       oab,
 			})
 		})
 	}
