@@ -116,9 +116,14 @@ func TestSaveProcessesSeed(t *testing.T) {
 			OAB:       "OAB",
 			URL:       "URL",
 		},
+		{
+			ProcessID: "2",
+			OAB:       "OAB2",
+			URL:       "URL",
+		},
 	}
 
 	rows, err = storage.SaveProcessSeeds(context.Background(), ps)
 	require.NoError(t, err)
-	require.Equal(t, int64(0), rows)
+	require.Equal(t, int64(1), rows)
 }

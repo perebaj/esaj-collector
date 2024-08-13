@@ -248,8 +248,8 @@ func (ec Client) GetPDF(_ context.Context, processID string, cData ChildrenData)
 	return nil
 }
 
-// showDo fetch the html page of the process that contains basic information about legal action.
-func (ec Client) showDo(processID, processForo, processCode string) (*ProcessBasicInfo, error) {
+// FetchBasicProcessInfo fetch the html page of the process that contains basic information about legal action.
+func (ec Client) FetchBasicProcessInfo(processID, processForo, processCode string) (*ProcessBasicInfo, error) {
 	slog.Debug("fetching show do page", "processID", processID, "processForo", processForo, "processCode", processCode)
 
 	url := ec.URL + fmt.Sprintf("/cpopg/show.do?processo.codigo=%s&processo.foro=%s&processo.numero=%s",
@@ -344,14 +344,14 @@ type ProcessSeed struct {
 func (ec Client) SearchByOAB(oab string) ([]ProcessSeed, error) {
 	// paginaConsulta=1000000000 is a way to find the last page, so we can iterate over all pages.
 	// using this output as a range limit.
-	url := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=1000000000&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", oab)
+	fetchURL := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=1000000000&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", oab)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", fetchURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	slog.Info("searching by all process related to OAB", "oab", oab, "url", url)
+	slog.Info("searching by all process related to OAB", "oab", oab, "url", fetchURL)
 	resp, err := ec.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error doing request: %w", err)
@@ -389,8 +389,8 @@ func (ec Client) SearchByOAB(oab string) ([]ProcessSeed, error) {
 	// iterate over all pages to get all processes hrefs.
 	var seeds []ProcessSeed
 	for i := range lastaPage {
-		url := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=%d&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", i, oab)
-		req, err := http.NewRequest("GET", url, nil)
+		fetchURL := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=%d&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", i, oab)
+		req, err := http.NewRequest("GET", fetchURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("error creating request: %w", err)
 		}
@@ -417,6 +417,7 @@ func (ec Client) SearchByOAB(oab string) ([]ProcessSeed, error) {
 			processID := s.Text()
 			processID = replacer.Replace(processID)
 			slog.Info("process found", "processID", processID, "href", href, "oab", oab, "page", i)
+
 			seeds = append(seeds, ProcessSeed{
 				ProcessID: processID,
 				URL:       ec.URL + href,

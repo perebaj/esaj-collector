@@ -2,14 +2,15 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/perebaj/esaj"
-	"golang.org/x/net/context"
+	"github.com/perebaj/esaj/api"
+	"github.com/perebaj/esaj/postgres"
 )
 
 func main() {
@@ -24,49 +25,37 @@ func main() {
 
 	slog.SetDefault(logger)
 
-	esajLogin := esaj.Login{
-		Username: esaj.GetEnvWithDefault("ESAJ_USERNAME", ""),
-		Password: esaj.GetEnvWithDefault("ESAJ_PASSWORD", ""),
+	postgresCfg := postgres.Config{
+		URL:             os.Getenv("POSTGRES_URL"),
+		MaxOpenConns:    10,
+		MaxIdleConns:    10,
+		ConnMaxIdleTime: 10,
 	}
 
-	if esajLogin.Username == "" || esajLogin.Password == "" {
-		slog.Error("ESAJ_USERNAME and/or ESAJ_PASSWORD not set")
-		os.Exit(1)
-	}
-
-	processID := flag.String("processID", "", "Process ID to search in the format 1016358-63.2020.8.26.0053")
-	flag.Parse()
-
-	if *processID == "" {
-		slog.Error("processID not set")
-		os.Exit(1)
-	}
-
-	logger = logger.With("processID", *processID)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	ctx = context.WithValue(ctx, esaj.ProcessIDContextKey, *processID)
-
-	cookieSession, cookiePDFSession, err := esaj.GetCookies(ctx, esajLogin, true, *processID)
+	db, err := postgres.OpenDB(postgresCfg)
 	if err != nil {
-		logger.Error("error getting cookies: %v", "error", err)
+		slog.Error("error opening database", "error", err)
 		os.Exit(1)
 	}
+	storage := postgres.NewStorage(db)
 
-	client := esaj.New(esaj.Config{
-		CookieSession:    cookieSession,
-		CookiePDFSession: cookiePDFSession,
-	}, &http.Client{
-		Timeout: 60 * time.Second,
+	esaj := esaj.New(esaj.Config{}, &http.Client{
+		Timeout: 30 * time.Second,
 	})
 
-	err = client.Run(ctx, *processID)
-	if err != nil {
-		logger.Error("error running the esaj parser", "error", err)
-		os.Exit(1)
+	mux := api.NewServerMux(storage, esaj)
+
+	slog.Info("server running on port 8080")
+
+	svc := &http.Server{
+		Addr:         fmt.Sprintf(":%d", 8080),
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 30 * time.Second,
 	}
 
-	logger.Info("all pdfs were downloaded successfully")
+	if err := svc.ListenAndServe(); err != nil {
+		slog.Error("error starting server", "error", err)
+		os.Exit(1)
+	}
 }
