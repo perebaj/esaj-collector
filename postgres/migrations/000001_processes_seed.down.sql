@@ -1,1 +1,1 @@
-DROP TABLE processes_seed;
+DROP TABLE process_seed;
