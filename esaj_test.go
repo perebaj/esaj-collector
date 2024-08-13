@@ -417,6 +417,6 @@ func Test_Client_showDo(t *testing.T) {
 
 	c.URL = server.URL
 
-	_, err := c.showDo("1007573-30.2024.8.26.0229", "0229", "6D0008MAZ0000")
+	_, err := c.FetchBasicProcessInfo("1007573-30.2024.8.26.0229", "0229", "6D0008MAZ0000")
 	require.Error(t, err)
 }

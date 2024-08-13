@@ -4,7 +4,7 @@ export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode
 ## Run the esaj service from cmd/esaj/main.go. Usage `make esaj processID=<process_id>`
 .PHONY: esaj
 esaj:
-	go run cmd/esaj/main.go --processID=$(processID)
+	go run cmd/esaj/main.go
 
 ## Run the pdf to markdown service from cmd/pdf2markdown/main.go
 .PHONY: pdf2markdown
