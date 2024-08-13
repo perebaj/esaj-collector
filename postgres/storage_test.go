@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/perebaj/esaj"
 	"github.com/perebaj/esaj/postgres"
 	"github.com/stretchr/testify/require"
 )
@@ -80,4 +81,44 @@ func TestPing(t *testing.T) {
 
 	err := db.Ping()
 	require.NoError(t, err)
+}
+
+// TestSaveProcessesSeed test the SaveProcessesSeed method
+func TestSaveProcessesSeed(t *testing.T) {
+	db := OpenDB(t)
+	defer func() {
+		_ = db.Close()
+	}()
+
+	storage := postgres.NewStorage(db)
+
+	ps := []esaj.ProcessSeed{
+		{
+			ProcessID: "1",
+			OAB:       "OAB",
+			URL:       "URL",
+		},
+		{
+			ProcessID: "2",
+			OAB:       "OAB",
+			URL:       "URL",
+		},
+	}
+
+	rows, err := storage.SaveProcessSeeds(context.Background(), ps)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), rows)
+
+	// valide if on conflict do nothing is working.
+	ps = []esaj.ProcessSeed{
+		{
+			ProcessID: "1",
+			OAB:       "OAB",
+			URL:       "URL",
+		},
+	}
+
+	rows, err = storage.SaveProcessSeeds(context.Background(), ps)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), rows)
 }
