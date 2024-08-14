@@ -70,7 +70,7 @@ func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID 
 
 			err = chromedp.Navigate(searchDoURLWithProcessCode).Do(ctx)
 			if err != nil {
-				return fmt.Errorf(fmt.Sprintf("could not navigate to search.do URL %s: %v", searchDoURLWithProcessCode, err))
+				return fmt.Errorf("could not navigate to search.do URL %s: %v", searchDoURLWithProcessCode, err)
 			}
 
 			u, err := url.Parse(searchDoURLWithProcessCode)
