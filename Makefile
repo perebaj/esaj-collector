@@ -1,8 +1,8 @@
-GOLANGCI_LINT_VERSION = v1.59.11
+GOLANGCI_LINT_VERSION=v1.60.1
 
 # TODO(@JOJO) im not sure if this is the best way to organize the variables related to azure functions
-functions-folder = functions
-esaj-api-function = esaj-api
+functions-folder=functions
+esaj-api-function=esaj-api
 
 export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
 
