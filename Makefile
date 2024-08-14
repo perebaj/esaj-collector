@@ -1,4 +1,5 @@
 GOLANGCI_LINT_VERSION=v1.60.1
+GOLANG_VULCHECK_VERSION=v1.1.3
 
 # TODO(@JOJO) im not sure if this is the best way to organize the variables related to azure functions
 functions-folder=functions
@@ -40,6 +41,7 @@ test:
 lint:
 	@echo "Running linter..."
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./... -v
+	go run golang.org/x/vuln/cmd/govulncheck@$(GOLANG_VULCHECK_VERSION) ./...
 
 ## Run test coverage
 .PHONY: coverage
