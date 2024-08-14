@@ -6,7 +6,7 @@ esaj-api-function = esaj-api
 
 export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
 
-## build the esaj service. Usage `make esaj`
+## build the esaj service for local usage. Usage `make esaj`
 .PHONY: esaj
 esaj:
 	go build -o ./cmd/esaj/ ./cmd/esaj
@@ -16,7 +16,7 @@ esaj:
 esaj-function:
 	GOOS=linux GOARCH=amd64 go build -o ./functions ./cmd/esaj
 
-## publish will build the esaj code and deploy it to the azure function app. Usage `make publish`
+## publish will build the esaj code and deploy it to the azure. Usage `make publish`
 .PHONY: publish
 publish: esaj-function
 	cd $(functions-folder) && func azure functionapp publish $(esaj-api-function)
