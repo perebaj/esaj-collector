@@ -1,10 +1,25 @@
-GOLANGCI_LINT_VERSION = v1.59.1
+GOLANGCI_LINT_VERSION = v1.59.11
+
+# TODO(@JOJO) im not sure if this is the best way to organize the variables related to azure functions
+functions-folder = functions
+esaj-api-function = esaj-api
+
 export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
 
 ## build the esaj service. Usage `make esaj`
 .PHONY: esaj
 esaj:
 	go build -o ./cmd/esaj/ ./cmd/esaj
+
+## build the esaj function to run in the azure OS. Usage `make esaj-function`
+.PHONY: esaj-function
+esaj-function:
+	GOOS=linux GOARCH=amd64 go build -o ./functions ./cmd/esaj
+
+## publish will build the esaj code and deploy it to the azure function app. Usage `make publish`
+.PHONY: publish
+publish: esaj-function
+	cd $(functions-folder) && func azure functionapp publish $(esaj-api-function)
 
 ## Run the pdf to markdown service from cmd/pdf2markdown/main.go
 .PHONY: pdf2markdown
