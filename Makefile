@@ -1,10 +1,10 @@
 GOLANGCI_LINT_VERSION = v1.59.1
 export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
 
-## Run the esaj service from cmd/esaj/main.go. Usage `make esaj processID=<process_id>`
+## build the esaj service. Usage `make esaj`
 .PHONY: esaj
 esaj:
-	go run cmd/esaj/main.go
+	go build -o ./cmd/esaj/ ./cmd/esaj
 
 ## Run the pdf to markdown service from cmd/pdf2markdown/main.go
 .PHONY: pdf2markdown
