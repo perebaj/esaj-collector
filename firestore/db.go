@@ -1,3 +1,4 @@
+// Package firestore gather all function that deal with the firestore database
 package firestore
 
 import (
