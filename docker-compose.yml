@@ -1,6 +1,9 @@
 version: "3.9"
 services:
   firestore-emulator:
+    # All components related to the gcloud can be installed using container images
+    # Here we are justing using emulators for firestore
+    # More: https://cloud.google.com/sdk/docs/downloads-docker
     image: "gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators"
     ports:
       - "8087:8087"
