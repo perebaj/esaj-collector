@@ -1,20 +1,10 @@
 version: "3.9"
 services:
-  postgres:
-    image: postgres:14
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: esajcollector
-    volumes:
-      - db:/var/lib/postgresql/data
-    restart: unless-stopped
+  firestore-emulator:
+    # All components related to the gcloud can be installed using container images
+    # Here we are justing using emulators for firestore
+    # More: https://cloud.google.com/sdk/docs/downloads-docker
+    image: "gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators"
     ports:
-      - 5432:5432
-    healthcheck:
-      test: pg_isready -U postgres
-      interval: 2s
-      timeout: 3s
-      retries: 5
-volumes:
-  db:
+      - "8087:8087"
+    command: ["gcloud", "emulators", "firestore", "start", "--host-port=0.0.0.0:8087"]
