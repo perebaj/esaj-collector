@@ -18,19 +18,22 @@ type esajClient interface {
 	SearchByOAB(oab string) ([]esaj.ProcessSeed, error)
 }
 
-type handler struct {
+// Handler is a struct that holds the storage and esaj client
+type Handler struct {
 	storage storage
 	esaj    esajClient
 }
 
-func newHandler(storage storage, esaj esajClient) handler {
-	return handler{
+// NewHandler creates a new Handler struct
+func NewHandler(storage storage, esaj esajClient) Handler {
+	return Handler{
 		storage: storage,
 		esaj:    esaj,
 	}
 }
 
-func (h handler) oabSeederHandler(w http.ResponseWriter, r *http.Request) {
+// OabSeederHandler is a handler that receives a oab query parameter and search for the process seeds in the esaj website
+func (h Handler) OabSeederHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	oab := r.URL.Query().Get("oab")
 	if oab == "" {
@@ -55,14 +58,4 @@ func (h handler) oabSeederHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write([]byte(`{"found":` + strconv.FormatInt(result, 10) + `}`))
 
-}
-
-// NewServerMux creates a new http.ServeMux with the routes for the api
-func NewServerMux(storage storage, esajClient esajClient) *http.ServeMux {
-	h := newHandler(storage, esajClient)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /processes", h.oabSeederHandler)
-
-	return mux
 }
