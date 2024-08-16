@@ -2,7 +2,10 @@
 package firestore
 
 import (
+	"context"
+
 	"cloud.google.com/go/firestore"
+	"github.com/perebaj/esaj"
 )
 
 // Storage is a struct that holds the firestore client and the projectID and database name
@@ -19,4 +22,8 @@ func NewStorage(client *firestore.Client, projectID, database string) *Storage {
 		projectID: projectID,
 		database:  database,
 	}
+}
+
+func (s *Storage) SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) (int64, error) {
+	return 0, nil
 }

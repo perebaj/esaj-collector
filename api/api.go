@@ -23,14 +23,14 @@ type handler struct {
 	esaj    esajClient
 }
 
-func newHandler(storage storage, esaj esajClient) handler {
+func NewHandler(storage storage, esaj esajClient) handler {
 	return handler{
 		storage: storage,
 		esaj:    esaj,
 	}
 }
 
-func (h handler) oabSeederHandler(w http.ResponseWriter, r *http.Request) {
+func (h handler) OabSeederHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	oab := r.URL.Query().Get("oab")
 	if oab == "" {
@@ -55,14 +55,4 @@ func (h handler) oabSeederHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write([]byte(`{"found":` + strconv.FormatInt(result, 10) + `}`))
 
-}
-
-// NewServerMux creates a new http.ServeMux with the routes for the api
-func NewServerMux(storage storage, esajClient esajClient) *http.ServeMux {
-	h := newHandler(storage, esajClient)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /processes", h.oabSeederHandler)
-
-	return mux
 }
