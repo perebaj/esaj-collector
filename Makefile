@@ -7,7 +7,6 @@ esaj-api-function=esaj-api
 # To connect with the firestore emulator, you need to set the FIRESTORE_EMULATOR_HOST environment variable. Using the same host and port defined in the inicialization of the container
 # More: https://pkg.go.dev/cloud.google.com/go/firestore#hdr-Google_Cloud_Firestore_Emulator
 export FIRESTORE_EMULATOR_HOST=0.0.0.0:8087
-export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
 
 ## build the esaj service for local usage. Usage `make esaj`
 .PHONY: esaj
@@ -50,12 +49,6 @@ lint:
 coverage:
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
-
-## create a new migration file. Usage `make migration/create name=<migration_name>`
-.PHONY: migration/create
-migration/create:
-	@echo "Creating a new migration..."
-	@go run github.com/golang-migrate/migrate/v4/cmd/migrate create -ext sql -dir postgres/migrations -seq $(name)
 
 ## Run integration tests. Usage `make integration-test` or `make integration-test testcase="TestFunctionName"` to run an isolated tests
 .PHONY: integration-test

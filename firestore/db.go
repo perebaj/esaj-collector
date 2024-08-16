@@ -12,19 +12,29 @@ import (
 type Storage struct {
 	client    *firestore.Client
 	projectID string
-	database  string
 }
 
 // NewStorage creates a new Storage struct
-func NewStorage(client *firestore.Client, projectID, database string) *Storage {
+func NewStorage(client *firestore.Client, projectID string) *Storage {
 	return &Storage{
 		client:    client,
 		projectID: projectID,
-		database:  database,
 	}
 }
 
 // SaveProcessSeeds saves the process seeds in the firestore database
-func (s *Storage) SaveProcessSeeds(_ context.Context, _ []esaj.ProcessSeed) (int64, error) {
-	return 0, nil
+func (s *Storage) SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) error {
+	collection := s.client.Collection("process_seeds")
+	bulkWriter := s.client.BulkWriter(ctx)
+	for _, seed := range ps {
+		docRef := collection.NewDoc()
+
+		_, err := bulkWriter.Set(docRef, seed)
+		if err != nil {
+			return err
+		}
+	}
+
+	bulkWriter.Flush()
+	return nil
 }
