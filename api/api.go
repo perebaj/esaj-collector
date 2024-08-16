@@ -18,19 +18,22 @@ type esajClient interface {
 	SearchByOAB(oab string) ([]esaj.ProcessSeed, error)
 }
 
-type handler struct {
+// Handler is a struct that holds the storage and esaj client
+type Handler struct {
 	storage storage
 	esaj    esajClient
 }
 
-func NewHandler(storage storage, esaj esajClient) handler {
-	return handler{
+// NewHandler creates a new Handler struct
+func NewHandler(storage storage, esaj esajClient) Handler {
+	return Handler{
 		storage: storage,
 		esaj:    esaj,
 	}
 }
 
-func (h handler) OabSeederHandler(w http.ResponseWriter, r *http.Request) {
+// OabSeederHandler is a handler that receives a oab query parameter and search for the process seeds in the esaj website
+func (h Handler) OabSeederHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	oab := r.URL.Query().Get("oab")
 	if oab == "" {

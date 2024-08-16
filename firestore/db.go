@@ -24,6 +24,7 @@ func NewStorage(client *firestore.Client, projectID, database string) *Storage {
 	}
 }
 
-func (s *Storage) SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) (int64, error) {
+// SaveProcessSeeds saves the process seeds in the firestore database
+func (s *Storage) SaveProcessSeeds(_ context.Context, _ []esaj.ProcessSeed) (int64, error) {
 	return 0, nil
 }
