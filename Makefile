@@ -4,7 +4,9 @@ GOLANG_VULCHECK_VERSION=v1.1.3
 # TODO(@JOJO) im not sure if this is the best way to organize the variables related to azure functions
 functions-folder=functions
 esaj-api-function=esaj-api
-
+# To connect with the firestore emulator, you need to set the FIRESTORE_EMULATOR_HOST environment variable. Using the same host and port defined in the inicialization of the container
+# More: https://pkg.go.dev/cloud.google.com/go/firestore#hdr-Google_Cloud_Firestore_Emulator
+export FIRESTORE_EMULATOR_HOST=0.0.0.0:8087
 export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
 
 ## build the esaj service for local usage. Usage `make esaj`
