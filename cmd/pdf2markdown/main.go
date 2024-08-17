@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/perebaj/esaj"
+	"github.com/perebaj/esaj/esaj"
 	"github.com/perebaj/esaj/llamaparser"
 )
 
