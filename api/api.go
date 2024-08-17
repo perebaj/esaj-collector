@@ -5,13 +5,12 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strconv"
 
-	"github.com/perebaj/esaj"
+	"github.com/perebaj/esaj/esaj"
 )
 
 type storage interface {
-	SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) (int64, error)
+	SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) error
 }
 
 type esajClient interface {
@@ -48,14 +47,14 @@ func (h Handler) OabSeederHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.storage.SaveProcessSeeds(ctx, seed)
+	slog.Info("saving process seeds", "seeds", seed)
+	err = h.storage.SaveProcessSeeds(ctx, seed)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("error saving process seeds", "error", err)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write([]byte(`{"found":` + strconv.FormatInt(result, 10) + `}`))
-
 }

@@ -32,4 +32,3 @@ __blobstorage__
 __queuestorage__
 __azurite_db*__.json
 .funcignore
-esaj

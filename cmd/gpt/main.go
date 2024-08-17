@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/perebaj/esaj"
+	"github.com/perebaj/esaj/esaj"
 	gpt "github.com/perebaj/esaj/openai"
 )
 

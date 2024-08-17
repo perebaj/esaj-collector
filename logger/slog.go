@@ -1,5 +1,5 @@
-// Package esaj from cmd/slog.go aims to gather all the functions that initialize the structure logs.
-package esaj
+// Package logger from cmd/slog.go aims to gather all the functions that initialize the structure logs.
+package logger
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"math"
 	"os"
 	"strings"
-	"time"
 )
 
 const (
@@ -26,6 +25,8 @@ const (
 	FormatLogFmt = "logfmt"
 	// FormatJSON is the JSON format
 	FormatJSON = "json"
+	// FormatGCP is the GCP format
+	FormatGCP = "gcp"
 )
 
 // AvailableLogLevels is a list of supported logging levels
@@ -46,6 +47,8 @@ var AvailableLogFormats = []string{
 	FormatLogFmt,
 	// FormatJSON is the JSON format
 	FormatJSON,
+	// FormatGCP is the GCP format
+	FormatGCP,
 }
 
 // ConfigLogger is a struct that holds the configuration for the logger.
@@ -78,23 +81,16 @@ func NewLoggerSlog(c ConfigLogger) (*slog.Logger, error) {
 // formats or key names in github.com/go-kit/log. The operator was originally implemented with go-kit/log,
 // so we use these replacements to make the migration smoother.
 func replaceSlogAttributes(_ []string, a slog.Attr) slog.Attr {
-	if a.Key == "time" {
-		return slog.Attr{
-			Key:   "ts",
-			Value: slog.StringValue(a.Value.Time().UTC().Format(time.RFC3339Nano)),
-		}
-	}
-
 	if a.Key == "level" {
 		return slog.Attr{
-			Key:   "level",
-			Value: slog.StringValue(strings.ToLower(a.Value.String())),
+			Key:   "severity",
+			Value: a.Value,
 		}
 	}
 
-	if a.Key == "source" {
+	if a.Key == "msg" {
 		return slog.Attr{
-			Key:   "caller",
+			Key:   "message",
 			Value: a.Value,
 		}
 	}
@@ -110,6 +106,9 @@ func getHandlerFromFormat(format string, opts slog.HandlerOptions) (slog.Handler
 		handler = slog.NewTextHandler(os.Stdout, &opts)
 		return handler, nil
 	case FormatJSON:
+		handler = slog.NewJSONHandler(os.Stdout, &opts)
+		return handler, nil
+	case FormatGCP:
 		handler = slog.NewJSONHandler(os.Stdout, &opts)
 		return handler, nil
 	default:

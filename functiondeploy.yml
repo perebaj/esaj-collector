@@ -1,0 +1,8 @@
+gcloud functions deploy fn-oab-seeder \
+--gen2 \
+--runtime=go122 \
+--allow-unauthenticated \
+--region=southamerica-east1	 \
+--source=. \
+--entry-point=fn-oab-seeder \
+--trigger-http

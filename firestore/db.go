@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/firestore"
-	"github.com/perebaj/esaj"
+	"github.com/perebaj/esaj/esaj"
 )
 
 // Storage is a struct that holds the firestore client and the projectID and database name
