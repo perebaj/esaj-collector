@@ -9,6 +9,7 @@ import (
 	fs "cloud.google.com/go/firestore"
 	"github.com/perebaj/esaj/esaj"
 	"github.com/perebaj/esaj/firestore"
+	"github.com/perebaj/esaj/tracing"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,6 +46,7 @@ func TestStorage_SaveProcessSeeds(t *testing.T) {
 	}
 
 	ctx := context.TODO()
+	ctx = tracing.SetTraceIDInContext(ctx, "test-trace-id")
 
 	c, err := fs.NewClient(ctx, projectID)
 	defer cleanup(t, c)
@@ -68,6 +70,7 @@ func TestStorage_SaveProcessSeeds(t *testing.T) {
 		require.Equal(t, ps[i].ProcessID, got["process_id"])
 		require.Equal(t, ps[i].OAB, got["oab"])
 		require.Equal(t, ps[i].URL, got["url"])
+		require.Equal(t, "test-trace-id", got["trace_id"])
 	}
 
 	// update a document that already exists

@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/perebaj/esaj/tracing"
 )
 
 // contextKey is a type used to store the context key.
@@ -341,7 +342,9 @@ type ProcessSeed struct {
 
 // SearchByOAB is a seeder function that searches for all processes related to a specific OAB number.
 // to get all processes hrefs its not necessary to have a valid session.
-func (ec Client) SearchByOAB(oab string) ([]ProcessSeed, error) {
+func (ec Client) SearchByOAB(ctx context.Context, oab string) ([]ProcessSeed, error) {
+	traceID := tracing.GetTraceIDFromContext(ctx)
+	logger := slog.With("traceID", traceID)
 	// paginaConsulta=1000000000 is a way to find the last page, so we can iterate over all pages.
 	// using this output as a range limit.
 	fetchURL := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=1000000000&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", oab)
@@ -351,7 +354,7 @@ func (ec Client) SearchByOAB(oab string) ([]ProcessSeed, error) {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	slog.Info("searching by all process related to OAB", "oab", oab, "url", fetchURL)
+	logger.Info("searching by all process related to OAB", "oab", oab, "url", fetchURL)
 	resp, err := ec.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error doing request: %w", err)
@@ -384,7 +387,7 @@ func (ec Client) SearchByOAB(oab string) ([]ProcessSeed, error) {
 	}
 
 	lastaPage := penultimatePageInt + 1
-	slog.Info("last page found", "lastPage", lastaPage)
+	logger.Info("last page found", "lastPage", lastaPage)
 
 	// iterate over all pages to get all processes hrefs.
 	var seeds []ProcessSeed
@@ -416,7 +419,7 @@ func (ec Client) SearchByOAB(oab string) ([]ProcessSeed, error) {
 			href, _ := s.Attr("href")
 			processID := s.Text()
 			processID = replacer.Replace(processID)
-			slog.Info("process found", "processID", processID, "href", href, "oab", oab, "page", i)
+			logger.Info("process found", "processID", processID, "href", href, "oab", oab, "page", i)
 
 			seeds = append(seeds, ProcessSeed{
 				ProcessID: processID,
