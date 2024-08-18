@@ -7,6 +7,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/perebaj/esaj/esaj"
+	"github.com/perebaj/esaj/tracing"
 )
 
 // Storage is a struct that holds the firestore client and the projectID and database name
@@ -25,6 +26,7 @@ func NewStorage(client *firestore.Client, projectID string) *Storage {
 
 // SaveProcessSeeds saves the process seeds in the firestore database
 func (s *Storage) SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) error {
+	traceID := tracing.GetTraceIDFromContext(ctx)
 	collection := s.client.Collection("process_seeds")
 	bulkWriter := s.client.BulkWriter(ctx)
 	for _, seed := range ps {
@@ -33,6 +35,7 @@ func (s *Storage) SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) e
 		m["process_id"] = seed.ProcessID
 		m["oab"] = seed.OAB
 		m["url"] = seed.URL
+		m["trace_id"] = traceID
 		_, err := bulkWriter.Set(docRef, m)
 		if err != nil {
 			return err
