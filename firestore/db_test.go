@@ -42,11 +42,6 @@ func TestStorage_SaveProcessSeeds(t *testing.T) {
 			OAB:       "789",
 			URL:       "http://example.com",
 		},
-		// {
-		// 	ProcessID: "123",
-		// 	OAB:       "123",
-		// 	URL:       "http://example.com",
-		// },
 	}
 
 	ctx := context.TODO()
@@ -66,6 +61,80 @@ func TestStorage_SaveProcessSeeds(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, docs, 3)
+	for i, doc := range docs {
+		var got map[string]interface{}
+		doc.DataTo(&got)
+
+		require.Equal(t, ps[i].ProcessID, got["process_id"])
+		require.Equal(t, ps[i].OAB, got["oab"])
+		require.Equal(t, ps[i].URL, got["url"])
+	}
+
+	// update a document that already exists
+	ps[0].URL = "http://example.com/updated"
+	err = storage.SaveProcessSeeds(ctx, ps)
+	require.NoError(t, err)
+
+	iter = collection.Documents(ctx)
+	docs, err = iter.GetAll()
+
+	require.Len(t, docs, 3)
+	for i, doc := range docs {
+		var got map[string]interface{}
+		doc.DataTo(&got)
+
+		require.Equal(t, ps[i].URL, got["url"])
+	}
+}
+
+func TestStorage_GetSeedsByOAB(t *testing.T) {
+	ps := []esaj.ProcessSeed{
+		{
+			ProcessID: "123",
+			OAB:       "123",
+			URL:       "http://teste.com",
+		},
+		{
+			ProcessID: "456",
+			OAB:       "456",
+			URL:       "http://example.com",
+		},
+		{
+			ProcessID: "789",
+			OAB:       "123",
+			URL:       "http://teste1.com",
+		},
+	}
+
+	ctx := context.TODO()
+
+	c, err := fs.NewClient(ctx, projectID)
+	defer cleanup(t, c)
+
+	require.NoError(t, err)
+	storage := firestore.NewStorage(c, projectID)
+	err = storage.SaveProcessSeeds(ctx, ps)
+
+	require.NoError(t, err)
+
+	got, err := storage.GetSeedsByOAB(ctx, "123")
+	require.NoError(t, err)
+
+	require.Len(t, got, 2)
+
+	require.Equal(t, ps[0].ProcessID, got[0].ID)
+	require.Equal(t, ps[0].ProcessID, got[0].ProcessID)
+	require.Equal(t, ps[0].OAB, got[0].OAB)
+	require.Equal(t, ps[0].URL, got[0].URL)
+	require.NotNil(t, got[0].CreatedAt)
+	require.NotNil(t, got[0].UpdatedAt)
+
+	require.Equal(t, ps[2].ProcessID, got[1].ID)
+	require.Equal(t, ps[2].ProcessID, got[1].ProcessID)
+	require.Equal(t, ps[2].OAB, got[1].OAB)
+	require.Equal(t, ps[2].URL, got[1].URL)
+	require.NotNil(t, got[1].CreatedAt)
+	require.NotNil(t, got[1].UpdatedAt)
 }
 
 // cleanup deletes all collections and documents in the firestore database
