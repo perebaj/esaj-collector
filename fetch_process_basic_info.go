@@ -1,4 +1,4 @@
-// Package collector. This functions is triggered when a new object is created or updated in the Firestore database(process_seeds). projectID := "blup-432616"
+// Package collector Triggered when a new object is created or updated in the Firestore database(process_seeds). projectID := "blup-432616"
 // It will receive the object, parse it and trigger a new search in the esaj website to scrape basic information about the process.
 package collector
 
@@ -37,6 +37,7 @@ func init() {
 	functions.CloudEvent("fn-fetch-process-basic-info", Parser)
 }
 
+// Parser ...
 func Parser(_ context.Context, event event.Event) error {
 	var data firestoredata.DocumentEventData
 	err := proto.Unmarshal(event.Data(), &data)

@@ -398,8 +398,7 @@ func Test_getContextWithProcessID(t *testing.T) {
 	assert.Equal(t, processID, got)
 }
 
-// TODO(@perebaj) improve this test case
-func Test_Client_showDo(t *testing.T) {
+func Test_Client_FetchBasicProcessInfo(t *testing.T) {
 	c := New(Config{
 		CookieSession: "test",
 	}, &http.Client{})
@@ -418,7 +417,7 @@ func Test_Client_showDo(t *testing.T) {
 
 	c.URL = server.URL
 
-	_, err := c.FetchBasicProcessInfo("1007573-30.2024.8.26.0229", "0229", "6D0008MAZ0000")
+	_, err := c.FetchBasicProcessInfo(context.TODO(), "1007573-30.2024.8.26.0229", "0229", "6D0008MAZ0000")
 	require.Error(t, err)
 }
 
