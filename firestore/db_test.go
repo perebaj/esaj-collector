@@ -189,6 +189,19 @@ func TestStorage_SaveProcessBasicInfo(t *testing.T) {
 	require.Equal(t, pBasicInfo.Defendant, got["defendant"])
 	require.Equal(t, pBasicInfo.Vara, got["vara"])
 	require.Equal(t, "test-trace-id", got["trace_id"])
+
+	// update a field to validate if the document is updated
+	pBasicInfo.ForoName = "updated value"
+
+	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo)
+	require.NoError(t, err)
+
+	iter = collection.Documents(ctx)
+	docs, err = iter.GetAll()
+	require.NoError(t, err)
+
+	require.Len(t, docs, 1)
+	require.Equal(t, "updated value", docs[0].Data()["foro_name"])
 }
 
 // cleanup deletes all collections and documents in the firestore database
