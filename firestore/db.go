@@ -3,6 +3,7 @@ package firestore
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -81,4 +82,28 @@ func (s *Storage) GetSeedsByOAB(ctx context.Context, oab string) ([]ProcessSeed,
 	}
 
 	return seeds, nil
+}
+
+// SaveProcessBasicInfo saves the process basic information in the firestore database
+func (s *Storage) SaveProcessBasicInfo(ctx context.Context, pBasicInfo esaj.ProcessBasicInfo) error {
+	traceID := tracing.GetTraceIDFromContext(ctx)
+	slog.Info("saving process basic info", "process_id", pBasicInfo.ProcessID, "trace_id", traceID)
+
+	collection := s.client.Collection("process_basic_info")
+	docRef := collection.Doc(pBasicInfo.ProcessID)
+
+	m := make(map[string]interface{})
+	m["process_id"] = pBasicInfo.ProcessID
+	m["foro_code"] = pBasicInfo.ProcessForo
+	m["foro_name"] = pBasicInfo.ForoName
+	m["process_code"] = pBasicInfo.ProcessCode
+	m["judge"] = pBasicInfo.Judge
+	m["class"] = pBasicInfo.Class
+	m["claimant"] = pBasicInfo.Claimant
+	m["defendant"] = pBasicInfo.Defendant
+	m["vara"] = pBasicInfo.Vara
+	m["trace_id"] = traceID
+
+	_, err := docRef.Set(ctx, m)
+	return err
 }

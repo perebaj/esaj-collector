@@ -250,8 +250,11 @@ func (ec Client) GetPDF(_ context.Context, processID string, cData ChildrenData)
 }
 
 // FetchBasicProcessInfo fetch the html page of the process that contains basic information about legal action.
-func (ec Client) FetchBasicProcessInfo(processID, processForo, processCode string) (*ProcessBasicInfo, error) {
-	slog.Debug("fetching show do page", "processID", processID, "processForo", processForo, "processCode", processCode)
+func (ec Client) FetchBasicProcessInfo(ctx context.Context, processID, processForo, processCode string) (*ProcessBasicInfo, error) {
+	traceID := tracing.GetTraceIDFromContext(ctx)
+	logger := slog.With("traceID", traceID, "processID", processID, "processForo", processForo, "processCode", processCode)
+
+	logger.Info("fetching process basic information")
 
 	url := ec.URL + fmt.Sprintf("/cpopg/show.do?processo.codigo=%s&processo.foro=%s&processo.numero=%s",
 		processCode,
@@ -327,8 +330,6 @@ func (ec Client) FetchBasicProcessInfo(processID, processForo, processCode strin
 		Claimant:  parties[0],
 		Defendant: parties[1],
 	}
-
-	slog.Debug("parsed process basic info", "pBasic", pBasic)
 
 	return pBasic, nil
 }
@@ -430,15 +431,15 @@ func (ec Client) SearchByOAB(ctx context.Context, oab string) ([]ProcessSeed, er
 			processID := s.Text()
 			// remove all spaces, tabs and new lines.
 			processID = replacer.Replace(processID)
-			logger.Info("process found", "processID", processID)
+			logger.Info(fmt.Sprintf("process found: %s", processID))
 
 			seeds = append(seeds, ProcessSeed{
 				ProcessID: processID,
 				URL:       ec.URL + href,
 				OAB:       oab,
 			})
-			logger.Info(fmt.Sprintf("number of processes found: %d", len(seeds)))
 		})
+		logger.Info(fmt.Sprintf("number of processes found: %d", len(seeds)))
 	}
 
 	return seeds, nil

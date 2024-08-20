@@ -8,9 +8,12 @@ require (
 	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/chromedp/cdproto v0.0.0-20240721024200-dac8efcb39ce
 	github.com/chromedp/chromedp v0.9.5
+	github.com/cloudevents/sdk-go/v2 v2.15.2
+	github.com/googleapis/google-cloudevents-go v0.8.0
 	github.com/sashabaranov/go-openai v1.27.1
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
+	google.golang.org/protobuf v1.34.2
 	gotest.tools v2.2.0+incompatible
 )
 
@@ -22,7 +25,6 @@ require (
 	cloud.google.com/go/longrunning v0.5.9 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
-	github.com/cloudevents/sdk-go/v2 v2.15.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -65,6 +67,5 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240722135656-d784300faade // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240722135656-d784300faade // indirect
 	google.golang.org/grpc v1.64.1 // indirect
-	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
