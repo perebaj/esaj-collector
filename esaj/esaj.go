@@ -344,7 +344,7 @@ type ProcessSeed struct {
 // to get all processes hrefs its not necessary to have a valid session.
 func (ec Client) SearchByOAB(ctx context.Context, oab string) ([]ProcessSeed, error) {
 	traceID := tracing.GetTraceIDFromContext(ctx)
-	logger := slog.With("traceID", traceID)
+	logger := slog.With("traceID", traceID, "oab", oab)
 	// paginaConsulta=1000000000 is a way to find the last page, so we can iterate over all pages.
 	// using this output as a range limit.
 	fetchURL := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=1000000000&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", oab)
@@ -354,7 +354,7 @@ func (ec Client) SearchByOAB(ctx context.Context, oab string) ([]ProcessSeed, er
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	logger.Info("searching by all process related to OAB", "oab", oab, "url", fetchURL)
+	logger.Info(fmt.Sprintf("searching by all process related to OAB: %s", oab), "url", fetchURL)
 	resp, err := ec.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error doing request: %w", err)
@@ -371,6 +371,8 @@ func (ec Client) SearchByOAB(ctx context.Context, oab string) ([]ProcessSeed, er
 		return nil, fmt.Errorf("error initializing goquery new document from reader: %w", err)
 	}
 
+	// the pagination element in the esaj HTML just contains the penultimate page.
+	// so we need to get it and add 1 to get the last page.
 	var penultimatePage string
 	doc.Find("a.paginacao").Last().Each(func(_ int, s *goquery.Selection) {
 		txt := s.Text()
@@ -380,25 +382,31 @@ func (ec Client) SearchByOAB(ctx context.Context, oab string) ([]ProcessSeed, er
 	replacer := strings.NewReplacer("\n", "", "\t", "", " ", "")
 	penultimatePage = replacer.Replace(penultimatePage)
 
-	//@TODO treat the case when there is only one page.
-	penultimatePageInt, err := strconv.Atoi(penultimatePage)
-	if err != nil {
-		return nil, fmt.Errorf("error converting text to number: %w", err)
+	// if the penultimatePage is empty, it means that there is only one page.
+	var penultimatePageInt int
+	if penultimatePage == "" {
+		logger.Info("only one page found, seeting page seek start point to 1")
+		penultimatePageInt = 1
+	} else {
+		logger.Info(fmt.Sprintf("penultimate page found: %s", penultimatePage))
+		penultimatePageInt, err = strconv.Atoi(penultimatePage)
+		if err != nil {
+			return nil, fmt.Errorf("error converting text to number: %w", err)
+		}
 	}
 
-	lastaPage := penultimatePageInt + 1
-	logger.Info("last page found", "lastPage", lastaPage)
-
+	lastPage := penultimatePageInt + 1
+	logger.Info(fmt.Sprintf("number of pages to iterate: %d", lastPage))
 	// iterate over all pages to get all processes hrefs.
 	var seeds []ProcessSeed
-	for i := range lastaPage {
-		fetchURL := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=%d&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", i, oab)
+	// the first page 1 and 0 refers to the same page, so, to avoid duplicate data, we are starting from 1.
+	for i := 1; i <= lastPage; i++ {
+		fetchURL := ec.URL + fmt.Sprintf("/cpopg/trocarPagina.do?paginaConsulta=%d&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=%s&cdForo=-1", i, oab)
+		logger.Info(fmt.Sprintf("fetching page: %d", i), "url", fetchURL)
 		req, err := http.NewRequest("GET", fetchURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("error creating request: %w", err)
 		}
-
-		req.Header.Set("Cookie", ec.Config.CookieSession)
 
 		resp, err := ec.Client.Do(req)
 		if err != nil {
@@ -418,14 +426,16 @@ func (ec Client) SearchByOAB(ctx context.Context, oab string) ([]ProcessSeed, er
 		doc.Find("a.linkProcesso").Each(func(_ int, s *goquery.Selection) {
 			href, _ := s.Attr("href")
 			processID := s.Text()
+			// remove all spaces, tabs and new lines.
 			processID = replacer.Replace(processID)
-			logger.Info("process found", "processID", processID, "href", href, "oab", oab, "page", i)
+			logger.Info("process found", "processID", processID)
 
 			seeds = append(seeds, ProcessSeed{
 				ProcessID: processID,
 				URL:       ec.URL + href,
 				OAB:       oab,
 			})
+			logger.Info(fmt.Sprintf("number of processes found: %d", len(seeds)))
 		})
 	}
 
