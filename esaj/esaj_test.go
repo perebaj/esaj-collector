@@ -439,6 +439,9 @@ func Test_Client_SearchByOAB(t *testing.T) {
 			return
 		}
 
+		// as thhis flow iterates over multiple pages, the alternative that I found to test it, was creating a
+		// golden file for each page and accordinly we iterate over the pages, we return the golden file
+		// and check if the response is the append of all the golden files
 		if paginaConsulta == "1" {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write(golden.Get(t, "searchByOABProcessList1.golden"))
