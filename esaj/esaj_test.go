@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gotest.tools/golden"
 )
 
 func Test_numeroDigitoAnoUnificado(t *testing.T) {
@@ -419,4 +420,52 @@ func Test_Client_showDo(t *testing.T) {
 
 	_, err := c.FetchBasicProcessInfo("1007573-30.2024.8.26.0229", "0229", "6D0008MAZ0000")
 	require.Error(t, err)
+}
+
+func Test_Client_SearchByOAB(t *testing.T) {
+	c := New(Config{
+		CookieSession: "test",
+	}, &http.Client{})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("expected %s, got %s", http.MethodGet, r.Method)
+		}
+
+		paginaConsulta := r.URL.Query().Get("paginaConsulta")
+		if paginaConsulta == "1000000000" {
+			w.WriteHeader(http.StatusOK)
+			// this request, tries to mock the operation that return the last page that we need to iterate over to
+			// get all the processes related to the OAB number
+			_, _ = w.Write(golden.Get(t, "searchByOABPenultimatePage.golden"))
+			return
+		}
+
+		// as thhis flow iterates over multiple pages, the alternative that I found to test it, was creating a
+		// golden file for each page and accordinly we iterate over the pages, we return the golden file
+		// and check if the response is the append of all the golden files
+		if paginaConsulta == "1" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(golden.Get(t, "searchByOABProcessList1.golden"))
+			return
+		}
+
+		if paginaConsulta == "2" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(golden.Get(t, "searchByOABProcessList2.golden"))
+			return
+		}
+	}))
+
+	c.URL = server.URL
+
+	wantSeed := []ProcessSeed{
+		{ProcessID: "1037499-17.2015.8.26.0053", OAB: "472135", URL: server.URL + "/cpopg/show.do?processo.codigo=1H0008CTD0000&processo.foro=53&paginaConsulta=1&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=472135&cdForo=-1"},
+		{ProcessID: "1019126-69.2014.8.26.0053", OAB: "472135", URL: server.URL + "/cpopg/show.do?processo.codigo=1H0006MLR0000&processo.foro=53&paginaConsulta=2&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=472135&cdForo=-1"},
+	}
+
+	seeds, err := c.SearchByOAB(context.Background(), "472135")
+	require.NoError(t, err)
+
+	assert.Equal(t, wantSeed, seeds)
 }

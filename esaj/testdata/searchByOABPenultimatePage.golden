@@ -1,0 +1,24 @@
+<html>
+   </body>
+   <div class="col-md-12 text-md-right">
+      <ul class="unj-pagination unj-d-ib unj-ml-20 unj-va-t" style="margin-right: 10px;">
+         <li>
+            <a class="unj-pagination__prev icon-previous"
+               href="/cpopg/trocarPagina.do?paginaConsulta=1&paginaConsulta=1000000000&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=472135&cdForo=-1"
+               title="Página anterior"></a>
+         </li>
+         <li>
+            <a class="paginacao" aria-label="Página 1"
+               href="/cpopg/trocarPagina.do?paginaConsulta=1&paginaConsulta=1000000000&conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=472135&cdForo=-1">
+            1
+            </a>
+         </li>
+         <li class="active">
+            <a href="javascript:" class="paginaAtual">
+            2
+            </a>
+         </li>
+      </ul>
+   </div>
+   </body>
+</html>
