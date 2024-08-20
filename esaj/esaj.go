@@ -384,6 +384,8 @@ func (ec Client) SearchByOAB(ctx context.Context, oab string) ([]ProcessSeed, er
 
 	// if the penultimatePage is empty, it means that there is only one page.
 	var penultimatePageInt int
+	// TODO(@perebaj) Maybe if the request failed to retrive the HTML, this value will be empty, so, to avoid
+	// miss flow, we need to get different values to have sure that the code its working properly.
 	if penultimatePage == "" {
 		logger.Info("only one page found, seeting page seek start point to 1")
 		penultimatePageInt = 1

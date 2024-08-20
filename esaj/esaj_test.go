@@ -464,19 +464,3 @@ func Test_Client_SearchByOAB(t *testing.T) {
 
 	assert.Equal(t, wantSeed, seeds)
 }
-
-func TestSeachOAB(t *testing.T) {
-	oab := "472135"
-
-	c := New(Config{
-		CookieSession: "test",
-	}, &http.Client{
-		Timeout: time.Second * 2,
-	})
-
-	resp, err := c.SearchByOAB(context.Background(), oab)
-
-	require.NoError(t, err)
-
-	t.Log(len(resp))
-}
