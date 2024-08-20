@@ -435,6 +435,8 @@ func Test_Client_SearchByOAB(t *testing.T) {
 		paginaConsulta := r.URL.Query().Get("paginaConsulta")
 		if paginaConsulta == "1000000000" {
 			w.WriteHeader(http.StatusOK)
+			// this request, tries to mock the operation that return the last page that we need to iterate over to
+			// get all the processes related to the OAB number
 			_, _ = w.Write(golden.Get(t, "searchByOABPenultimatePage.golden"))
 			return
 		}
