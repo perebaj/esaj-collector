@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 
@@ -59,19 +58,6 @@ func Parser(_ context.Context, event event.Event) error {
 	ctx = tracing.SetTraceIDInContext(ctx, traceID)
 
 	u := doc["url"].GetStringValue()
-	parsedURL, err := url.Parse(u)
-	if err != nil {
-		logger.Error("error parsing the url", "url", u, "error", err)
-		return err
-	}
-
-	processoCodigo := parsedURL.Query().Get("processo.codigo")
-	processoForo := parsedURL.Query().Get("processo.foro")
-
-	if processoCodigo == "" || processoForo == "" {
-		logger.Error(fmt.Sprintf("error parsing the url: %s. processo.codigo or processo.foro is empty", u))
-		return fmt.Errorf("error parsing the url: %s. processo.codigo or processo.foro is empty", u)
-	}
 
 	projectID := "blup-432616"
 	databaseName := "blup-db"
@@ -88,7 +74,7 @@ func Parser(_ context.Context, event event.Event) error {
 		Timeout: 90 * time.Second,
 	})
 
-	pBasicInfo, err := esajClient.FetchBasicProcessInfo(ctx, processID, processoForo, processoCodigo)
+	pBasicInfo, err := esajClient.FetchBasicProcessInfo(ctx, u, processID)
 	if err != nil {
 		logger.Error("error fetching basic process info", "error", err)
 		return fmt.Errorf("error fetching basic process info. error: %w", err)

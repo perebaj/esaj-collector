@@ -154,6 +154,7 @@ func TestStorage_SaveProcessBasicInfo(t *testing.T) {
 		Claimant:    "http://teste1.com",
 		Defendant:   "123",
 		Vara:        "http://teste.com",
+		URL:         "http://example.com",
 	}
 
 	ctx := context.TODO()
@@ -189,6 +190,7 @@ func TestStorage_SaveProcessBasicInfo(t *testing.T) {
 	require.Equal(t, pBasicInfo.Defendant, got["defendant"])
 	require.Equal(t, pBasicInfo.Vara, got["vara"])
 	require.Equal(t, "test-trace-id", got["trace_id"])
+	require.Equal(t, pBasicInfo.URL, got["url"])
 
 	// update a field to validate if the document is updated
 	pBasicInfo.ForoName = "updated value"

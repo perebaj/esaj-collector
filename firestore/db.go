@@ -103,6 +103,7 @@ func (s *Storage) SaveProcessBasicInfo(ctx context.Context, pBasicInfo esaj.Proc
 	m["defendant"] = pBasicInfo.Defendant
 	m["vara"] = pBasicInfo.Vara
 	m["trace_id"] = traceID
+	m["url"] = pBasicInfo.URL
 
 	_, err := docRef.Set(ctx, m)
 	return err
