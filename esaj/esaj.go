@@ -11,6 +11,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"slices"
@@ -250,8 +251,25 @@ func (ec Client) GetPDF(_ context.Context, processID string, cData ChildrenData)
 }
 
 // FetchBasicProcessInfo fetch the html page of the process that contains basic information about legal action.
-func (ec Client) FetchBasicProcessInfo(processID, processForo, processCode string) (*ProcessBasicInfo, error) {
-	slog.Debug("fetching show do page", "processID", processID, "processForo", processForo, "processCode", processCode)
+func (ec Client) FetchBasicProcessInfo(ctx context.Context, u string, processID string) (*ProcessBasicInfo, error) {
+	traceID := tracing.GetTraceIDFromContext(ctx)
+	logger := slog.With("traceID", traceID, "processID", processID)
+	parsedURL, err := url.Parse(u)
+
+	if err != nil {
+		logger.Error("error parsing the url", "url", u, "error", err)
+		return nil, err
+	}
+
+	processCode := parsedURL.Query().Get("processo.codigo")
+	processForo := parsedURL.Query().Get("processo.foro")
+
+	if processCode == "" || processForo == "" {
+		logger.Error(fmt.Sprintf("error parsing the url: %s. processo.codigo or processo.foro is empty", u))
+		return nil, err
+	}
+
+	logger.Info("fetching process basic information")
 
 	url := ec.URL + fmt.Sprintf("/cpopg/show.do?processo.codigo=%s&processo.foro=%s&processo.numero=%s",
 		processCode,
@@ -260,13 +278,15 @@ func (ec Client) FetchBasicProcessInfo(processID, processForo, processCode strin
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+		logger.Error("error creating request", "error", err)
+		return nil, err
 	}
 	req.Header.Set("Cookie", ec.Config.CookieSession)
 
 	resp, err := ec.Client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error doing request: %w", err)
+		logger.Error("error doing request", "error", err)
+		return nil, err
 	}
 
 	defer func() {
@@ -275,12 +295,14 @@ func (ec Client) FetchBasicProcessInfo(processID, processForo, processCode strin
 
 	bodyByte, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading body: %w", err)
+		logger.Error("error reading body", "error", err)
+		return nil, err
 	}
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyByte)))
 	if err != nil {
-		return nil, fmt.Errorf("error initializing goquery new document from reader: %w", err)
+		logger.Error("error initializing goquery new document from reader", "error", err)
+		return nil, err
 	}
 
 	var processClass string
@@ -312,6 +334,7 @@ func (ec Client) FetchBasicProcessInfo(processID, processForo, processCode strin
 	})
 
 	if len(parties) < 2 {
+		logger.Error("error parsing parties")
 		return nil, fmt.Errorf("error parsing parties")
 	}
 
@@ -326,9 +349,8 @@ func (ec Client) FetchBasicProcessInfo(processID, processForo, processCode strin
 		// TODO(@perebaj) maybe im accessing an index that does not exist. Or maybe the parties are not in the correct order.
 		Claimant:  parties[0],
 		Defendant: parties[1],
+		URL:       u,
 	}
-
-	slog.Debug("parsed process basic info", "pBasic", pBasic)
 
 	return pBasic, nil
 }
@@ -430,15 +452,15 @@ func (ec Client) SearchByOAB(ctx context.Context, oab string) ([]ProcessSeed, er
 			processID := s.Text()
 			// remove all spaces, tabs and new lines.
 			processID = replacer.Replace(processID)
-			logger.Info("process found", "processID", processID)
+			logger.Info(fmt.Sprintf("process found: %s", processID))
 
 			seeds = append(seeds, ProcessSeed{
 				ProcessID: processID,
 				URL:       ec.URL + href,
 				OAB:       oab,
 			})
-			logger.Info(fmt.Sprintf("number of processes found: %d", len(seeds)))
 		})
+		logger.Info(fmt.Sprintf("number of processes found: %d", len(seeds)))
 	}
 
 	return seeds, nil

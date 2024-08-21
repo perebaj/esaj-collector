@@ -1,5 +1,8 @@
 //go:build integration
 
+// Obs: It's recommended to run this tests using the command line located in the Makefile,
+// this because all variable injection and important configurations are made there.
+// Example: make integration-test testcase=<>
 package firestore_test
 
 import (
@@ -138,6 +141,69 @@ func TestStorage_GetSeedsByOAB(t *testing.T) {
 	require.Equal(t, ps[2].URL, got[1].URL)
 	require.NotNil(t, got[1].CreatedAt)
 	require.NotNil(t, got[1].UpdatedAt)
+}
+
+func TestStorage_SaveProcessBasicInfo(t *testing.T) {
+	pBasicInfo := esaj.ProcessBasicInfo{
+		ProcessID:   "123",
+		ProcessForo: "123",
+		ForoName:    "http://teste.com",
+		ProcessCode: "456",
+		Judge:       "http://example.com",
+		Class:       "123",
+		Claimant:    "http://teste1.com",
+		Defendant:   "123",
+		Vara:        "http://teste.com",
+		URL:         "http://example.com",
+	}
+
+	ctx := context.TODO()
+	ctx = tracing.SetTraceIDInContext(ctx, "test-trace-id")
+
+	c, err := fs.NewClient(ctx, projectID)
+	defer cleanup(t, c)
+
+	require.NoError(t, err)
+	storage := firestore.NewStorage(c, projectID)
+
+	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo)
+	require.NoError(t, err)
+
+	collection := c.Collection("process_basic_info")
+
+	iter := collection.Documents(ctx)
+	docs, err := iter.GetAll()
+	require.NoError(t, err)
+
+	require.Len(t, docs, 1)
+
+	var got map[string]interface{}
+	docs[0].DataTo(&got)
+
+	require.Equal(t, pBasicInfo.ProcessID, got["process_id"])
+	require.Equal(t, pBasicInfo.ProcessForo, got["foro_code"])
+	require.Equal(t, pBasicInfo.ForoName, got["foro_name"])
+	require.Equal(t, pBasicInfo.ProcessCode, got["process_code"])
+	require.Equal(t, pBasicInfo.Judge, got["judge"])
+	require.Equal(t, pBasicInfo.Class, got["class"])
+	require.Equal(t, pBasicInfo.Claimant, got["claimant"])
+	require.Equal(t, pBasicInfo.Defendant, got["defendant"])
+	require.Equal(t, pBasicInfo.Vara, got["vara"])
+	require.Equal(t, "test-trace-id", got["trace_id"])
+	require.Equal(t, pBasicInfo.URL, got["url"])
+
+	// update a field to validate if the document is updated
+	pBasicInfo.ForoName = "updated value"
+
+	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo)
+	require.NoError(t, err)
+
+	iter = collection.Documents(ctx)
+	docs, err = iter.GetAll()
+	require.NoError(t, err)
+
+	require.Len(t, docs, 1)
+	require.Equal(t, "updated value", docs[0].Data()["foro_name"])
 }
 
 // cleanup deletes all collections and documents in the firestore database

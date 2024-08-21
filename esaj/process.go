@@ -83,4 +83,7 @@ type ProcessBasicInfo struct {
 	Defendant string
 	// Vara is the court where the process is being processed.
 	Vara string
+	// URL is the URL of the process in the TJSP website.
+	// Example: https://esaj.tjsp.jus.br/cpopg/show.do?processo.codigo=1HZX5Q48A0000&processo.foro=53&paginaConsulta=17&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=103289&cdForo=-1
+	URL string
 }
