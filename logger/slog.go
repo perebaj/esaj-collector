@@ -77,9 +77,7 @@ func NewLoggerSlog(c ConfigLogger) (*slog.Logger, error) {
 	return slog.New(handler), nil
 }
 
-// replaceSlogAttributes replaces fields that were added by default by slog, but had different
-// formats or key names in github.com/go-kit/log. The operator was originally implemented with go-kit/log,
-// so we use these replacements to make the migration smoother.
+// replaceSlogAttributes replaces the slog attributes to match different log formats.
 func replaceSlogAttributes(_ []string, a slog.Attr) slog.Attr {
 	if a.Key == "level" {
 		return slog.Attr{

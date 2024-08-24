@@ -108,3 +108,47 @@ func (s *Storage) SaveProcessBasicInfo(ctx context.Context, pBasicInfo esaj.Proc
 	_, err := docRef.Set(ctx, m)
 	return err
 }
+
+// ProcessBasicInfo is the struct that represents the process basic information in the firestore database
+type ProcessBasicInfo struct {
+	ProcessID   string    `firestore:"process_id"`
+	ProcessForo string    `firestore:"foro_code"`
+	ForoName    string    `firestore:"foro_name"`
+	ProcessCode string    `firestore:"process_code"`
+	Judge       string    `firestore:"judge"`
+	Class       string    `firestore:"class"`
+	Claimant    string    `firestore:"claimant"`
+	Defendant   string    `firestore:"defendant"`
+	Vara        string    `firestore:"vara"`
+	URL         string    `firestore:"url"`
+	CreatedAt   time.Time `firestore:"created_at"`
+	UpdatedAt   time.Time `firestore:"updated_at"`
+	TraceID     string    `firestore:"trace_id"`
+}
+
+// ProcessBasicInfoByProcessID returns the process basic information given a processID
+func (s *Storage) ProcessBasicInfoByProcessID(ctx context.Context, processID string) (*ProcessBasicInfo, error) {
+	collection := s.client.Collection("process_basic_info")
+	doc, err := collection.Doc(processID).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	p := ProcessBasicInfo{
+		ProcessID:   doc.Data()["process_id"].(string),
+		ProcessForo: doc.Data()["foro_code"].(string),
+		ForoName:    doc.Data()["foro_name"].(string),
+		ProcessCode: doc.Data()["process_code"].(string),
+		Judge:       doc.Data()["judge"].(string),
+		Class:       doc.Data()["class"].(string),
+		Claimant:    doc.Data()["claimant"].(string),
+		Defendant:   doc.Data()["defendant"].(string),
+		Vara:        doc.Data()["vara"].(string),
+		URL:         doc.Data()["url"].(string),
+		CreatedAt:   doc.CreateTime,
+		UpdatedAt:   doc.UpdateTime,
+		TraceID:     doc.Data()["trace_id"].(string),
+	}
+
+	return &p, nil
+}

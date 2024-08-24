@@ -206,6 +206,35 @@ func TestStorage_SaveProcessBasicInfo(t *testing.T) {
 	require.Equal(t, "updated value", docs[0].Data()["foro_name"])
 }
 
+func TestStorage_ProcessBasicInfoByProcessID(t *testing.T) {
+	//save process basic info
+	pBasicInfo := esaj.ProcessBasicInfo{
+		ProcessID:   "123",
+		ProcessForo: "123",
+	}
+
+	ctx := context.TODO()
+	ctx = tracing.SetTraceIDInContext(ctx, "test-trace-id")
+
+	c, err := fs.NewClient(ctx, projectID)
+	defer cleanup(t, c)
+
+	require.NoError(t, err)
+
+	storage := firestore.NewStorage(c, projectID)
+	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo)
+	require.NoError(t, err)
+
+	got, err := storage.ProcessBasicInfoByProcessID(ctx, "123")
+	require.NoError(t, err)
+
+	require.Equal(t, pBasicInfo.ProcessID, got.ProcessID)
+	require.Equal(t, pBasicInfo.ProcessForo, got.ProcessForo)
+	require.Equal(t, "test-trace-id", got.TraceID)
+	require.NotNil(t, got.CreatedAt)
+	require.NotNil(t, got.UpdatedAt)
+}
+
 // cleanup deletes all collections and documents in the firestore database
 // it must be called in all tests that uses the firestore database
 func cleanup(t *testing.T, c *fs.Client) {

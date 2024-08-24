@@ -1,9 +1,6 @@
 GOLANGCI_LINT_VERSION=v1.60.1
 GOLANG_VULCHECK_VERSION=v1.1.3
 
-# TODO(@JOJO) im not sure if this is the best way to organize the variables related to azure functions
-functions-folder=functions
-esaj-api-function=esaj-api
 # To connect with the firestore emulator, you need to set the FIRESTORE_EMULATOR_HOST environment variable. Using the same host and port defined in the inicialization of the container
 # More: https://pkg.go.dev/cloud.google.com/go/firestore#hdr-Google_Cloud_Firestore_Emulator
 export FIRESTORE_EMULATOR_HOST=0.0.0.0:8087
@@ -12,16 +9,6 @@ export FIRESTORE_EMULATOR_HOST=0.0.0.0:8087
 .PHONY: esaj
 esaj:
 	go build -o ./cmd/esaj/ ./cmd/esaj
-
-## build the esaj function to run in the azure OS. Usage `make esaj-function`
-.PHONY: esaj-function
-esaj-function:
-	GOOS=linux GOARCH=amd64 go build -o ./functions ./cmd/esaj
-
-## publish will build the esaj code and deploy it to the azure. Usage `make publish`
-.PHONY: publish
-publish: esaj-function
-	cd $(functions-folder) && func azure functionapp publish $(esaj-api-function)
 
 ## Run the pdf to markdown service from cmd/pdf2markdown/main.go
 .PHONY: pdf2markdown
