@@ -1,3 +1,6 @@
+// Package api user.go has the handlers to deal with the http requests related to user management.
+//
+//go:generate mockgen -source user.go -destination ../mock/user_mock.go -package mock
 package api
 
 import (
@@ -55,7 +58,7 @@ func (h UserHandler) ClerkWebHookHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 	default:
-		logger.Info(fmt.Sprintf("event %s not supported", clerkWebHook.Type))
+		logger.Error(fmt.Sprintf("event %s not supported", clerkWebHook.Type))
 		http.Error(w, "event not supported", http.StatusBadRequest)
 	}
 

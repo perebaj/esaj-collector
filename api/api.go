@@ -1,4 +1,6 @@
 // Package api from api/api.go has the handlers to deal with the http requests.
+//
+//go:generate mockgen -source api.go -destination ../mock/api_mock.go -package mock
 package api
 
 import (
@@ -13,7 +15,8 @@ import (
 // GCPTraceHeader is a default header send through http requests that can be used in the tracking
 const GCPTraceHeader = "X-Cloud-Trace-Context"
 
-type storage interface {
+// Storage is an interface that defines the methods to deal with storage
+type Storage interface {
 	SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) error
 }
 
@@ -23,12 +26,12 @@ type esajClient interface {
 
 // Handler is a struct that holds the storage and esaj client
 type Handler struct {
-	storage storage
+	storage Storage
 	esaj    esajClient
 }
 
 // NewHandler creates a new Handler struct
-func NewHandler(storage storage, esaj esajClient) Handler {
+func NewHandler(storage Storage, esaj esajClient) Handler {
 	return Handler{
 		storage: storage,
 		esaj:    esaj,
