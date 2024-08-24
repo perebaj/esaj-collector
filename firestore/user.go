@@ -2,8 +2,11 @@ package firestore
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"time"
 
+	"cloud.google.com/go/firestore"
 	"github.com/perebaj/esaj/clerk"
 	"github.com/perebaj/esaj/tracing"
 )
@@ -27,6 +30,25 @@ func (s *Storage) SaveUser(ctx context.Context, event clerk.WebHookEvent) error 
 	m["trace_id"] = traceID
 
 	_, err := docRef.Set(ctx, m)
+
+	return err
+}
+
+// DeleteUser receive a generic clerk webhook event and delete the user in the firestore database
+// This delete is a soft delete, the user is not removed from the database, but a deleted_at field is added
+// with the current time
+func (s *Storage) DeleteUser(ctx context.Context, event clerk.WebHookEvent) error {
+	traceID := tracing.GetTraceIDFromContext(ctx)
+	slog.Info(fmt.Sprintf("deleting user %s", event.Data.ID), "traceID", traceID, "user_id", event.Data.ID)
+	collection := s.client.Collection("users")
+	docRef := collection.Doc(event.Data.ID)
+
+	_, err := docRef.Update(ctx, []firestore.Update{
+		{
+			Path:  "deleted_at",
+			Value: time.Now().Format(time.RFC3339),
+		},
+	})
 
 	return err
 }

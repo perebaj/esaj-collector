@@ -40,6 +40,20 @@ func (m *MockUserStorage) EXPECT() *MockUserStorageMockRecorder {
 	return m.recorder
 }
 
+// DeleteUser mocks base method.
+func (m *MockUserStorage) DeleteUser(ctx context.Context, user clerk.WebHookEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUser", ctx, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockUserStorageMockRecorder) DeleteUser(ctx, user any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockUserStorage)(nil).DeleteUser), ctx, user)
+}
+
 // SaveUser mocks base method.
 func (m *MockUserStorage) SaveUser(ctx context.Context, user clerk.WebHookEvent) error {
 	m.ctrl.T.Helper()

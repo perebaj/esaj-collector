@@ -65,3 +65,27 @@ func TestUserHandler_ClerkWebHookHandler_errorDecoding(t *testing.T) {
 
 	require.Equal(t, 400, w.Code)
 }
+
+func TestUserHandler_ClerkWebHookHandler_deleteUser(t *testing.T) {
+	const event = `{
+		"data": {
+			"deleted": true,
+			"id": "user_29wBMCtzATuFJut8jO2VNTVekS4",
+			"object": "user"
+		},
+		"object": "event",
+		"type": "user.deleted"
+	}`
+
+	ctrl := gomock.NewController(t)
+	userStorageMock := mock.NewMockUserStorage(ctrl)
+	userStorageMock.EXPECT().DeleteUser(gomock.Any(), gomock.Any()).Return(nil)
+
+	req := httptest.NewRequest("POST", "/", strings.NewReader(event))
+	w := httptest.NewRecorder()
+
+	userHandler := api.NewUserHandler(userStorageMock)
+	userHandler.ClerkWebHookHandler(w, req)
+
+	require.Equal(t, 200, w.Code)
+}

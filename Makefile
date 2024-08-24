@@ -72,6 +72,12 @@ dev/stop:
 	@echo "Stopping the development server..."
 	@docker-compose down
 
+## Generate the mocks for the tests
+.PHONY: generate-mocks
+generate-mocks:
+	@echo "Generating mocks..."
+	go generate ./...
+
 ## Display help for all targets
 .PHONY: help
 help:
