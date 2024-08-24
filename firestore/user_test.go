@@ -63,6 +63,28 @@ func TestStorage_SaveUser(t *testing.T) {
 	require.Equal(t, "2022-05-31T12:56:31-03:00", m["created_at"])
 	require.Equal(t, "2022-05-31T12:56:31-03:00", m["updated_at"])
 	require.Equal(t, "test-trace-id", m["trace_id"])
+	require.Nil(t, m["deleted_at"])
+
+	// validate if the update is working
+	event.Data.FirstName = "Jane"
+
+	err = storage.SaveUser(ctx, event)
+	require.NoError(t, err)
+
+	doc, err = c.Collection("users").Doc("123").Get(ctx)
+	require.NoError(t, err)
+
+	doc.DataTo(&m)
+
+	require.Equal(t, "Jane", m["first_name"])
+	require.Equal(t, event.Data.LastName, m["last_name"])
+	require.NotNil(t, m["email_addresses"])
+	require.Equal(t, event.Data.ImageURL, m["image_url"])
+	require.Equal(t, event.Data.Birthday, m["birthday"])
+	require.Equal(t, "2022-05-31T12:56:31-03:00", m["created_at"])
+	require.Equal(t, "2022-05-31T12:56:31-03:00", m["updated_at"])
+	require.Equal(t, "test-trace-id", m["trace_id"])
+	require.Nil(t, m["deleted_at"])
 }
 
 func TestStorage_DeleteUser(t *testing.T) {
