@@ -17,7 +17,7 @@ func TestUserHandler_ClerkWebHookHandler_createUser(t *testing.T) {
 	userStorageMock := mock.NewMockUserStorage(ctrl)
 
 	userStorageMock.EXPECT().SaveUser(gomock.Any(), gomock.Any()).Return(nil)
-	req := httptest.NewRequest("POST", "/random", strings.NewReader(`{"type": "user.created"}`))
+	req := httptest.NewRequest("POST", "/", strings.NewReader(`{"type": "user.created"}`))
 	w := httptest.NewRecorder()
 
 	userHandler := api.NewUserHandler(userStorageMock)
@@ -30,7 +30,7 @@ func TestUserHandler_ClerkWebHookHandler_invalidOperation(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	userStorageMock := mock.NewMockUserStorage(ctrl)
 
-	req := httptest.NewRequest("POST", "/random", strings.NewReader(`{"type": "invalid.operation"}`))
+	req := httptest.NewRequest("POST", "/", strings.NewReader(`{"type": "invalid.operation"}`))
 	w := httptest.NewRecorder()
 
 	userHandler := api.NewUserHandler(userStorageMock)
@@ -44,7 +44,7 @@ func TestUserHandler_ClerkWebHookHandler_errorCreatingUser(t *testing.T) {
 	userStorageMock := mock.NewMockUserStorage(ctrl)
 
 	userStorageMock.EXPECT().SaveUser(gomock.Any(), gomock.Any()).Return(errors.New("error saving user"))
-	req := httptest.NewRequest("POST", "/random", strings.NewReader(`{"type": "user.created"}`))
+	req := httptest.NewRequest("POST", "/", strings.NewReader(`{"type": "user.created"}`))
 	w := httptest.NewRecorder()
 
 	userHandler := api.NewUserHandler(userStorageMock)
@@ -57,7 +57,7 @@ func TestUserHandler_ClerkWebHookHandler_errorDecoding(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	userStorageMock := mock.NewMockUserStorage(ctrl)
 
-	req := httptest.NewRequest("POST", "/random", strings.NewReader(`{`))
+	req := httptest.NewRequest("POST", "/", strings.NewReader(`{`))
 	w := httptest.NewRecorder()
 
 	userHandler := api.NewUserHandler(userStorageMock)
