@@ -1,0 +1,32 @@
+package firestore
+
+import (
+	"context"
+	"time"
+
+	"github.com/perebaj/esaj/clerk"
+	"github.com/perebaj/esaj/tracing"
+)
+
+// SaveUser receive a generic clerk webhook event and save the user in the firestore database
+func (s *Storage) SaveUser(ctx context.Context, event clerk.WebHookEvent) error {
+	traceID := tracing.GetTraceIDFromContext(ctx)
+	collection := s.client.Collection("users")
+	docRef := collection.Doc(event.Data.ID)
+	m := make(map[string]interface{})
+
+	m["id"] = event.Data.ID
+	m["first_name"] = event.Data.FirstName
+	m["last_name"] = event.Data.LastName
+	m["email_addresses"] = event.Data.EmailAddresses
+	m["image_url"] = event.Data.ImageURL
+	m["birthday"] = event.Data.Birthday
+	// Date is received in unix timestamp in milliseconds and must be converted to RFC3339
+	m["created_at"] = time.Unix(0, event.Data.CreatedAt*int64(time.Millisecond)).Format(time.RFC3339)
+	m["updated_at"] = time.Unix(0, event.Data.UpdatedAt*int64(time.Millisecond)).Format(time.RFC3339)
+	m["trace_id"] = traceID
+
+	_, err := docRef.Set(ctx, m)
+
+	return err
+}
