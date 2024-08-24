@@ -17,6 +17,7 @@ import (
 // UserStorage is an interface that defines the methods to deal with user in the storage
 type UserStorage interface {
 	SaveUser(ctx context.Context, user clerk.WebHookEvent) error
+	DeleteUser(ctx context.Context, user clerk.WebHookEvent) error
 }
 
 // UserHandler gather third party services to create an user
@@ -57,6 +58,23 @@ func (h UserHandler) ClerkWebHookHandler(w http.ResponseWriter, r *http.Request)
 			logger.Error("error creating user", "error", err, "request_body", clerkWebHook)
 			return
 		}
+	case "user.updated":
+		logger.Info("updating user", "clerkWebHook", clerkWebHook)
+		err := h.createUser(ctx, clerkWebHook)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("error updating user", "error", err, "request_body", clerkWebHook)
+			return
+		}
+	case "user.deleted":
+		logger.Info("deleting user", "clerkWebHook", clerkWebHook)
+		err := h.storage.DeleteUser(ctx, clerkWebHook)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("error deleting user", "error", err, "request_body", clerkWebHook)
+			return
+		}
+
 	default:
 		logger.Error(fmt.Sprintf("event %s not supported", clerkWebHook.Type))
 		http.Error(w, "event not supported", http.StatusBadRequest)
