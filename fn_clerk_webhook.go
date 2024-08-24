@@ -39,6 +39,5 @@ func init() {
 	handler := api.NewUserHandler(storage)
 	// POST /clerk-webhook
 	// first argument is the entry-point, second is the handler function
-
 	functions.HTTP("fn-clerk-webhook", handler.ClerkWebHookHandler)
 }
