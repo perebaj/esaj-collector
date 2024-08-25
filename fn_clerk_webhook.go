@@ -1,3 +1,5 @@
+// Package collector ...
+// This function will be triggered by an http request, to create, update or delete a user in the database.
 package collector
 
 import (
@@ -37,7 +39,5 @@ func init() {
 	slog.Info("storage initialized")
 
 	handler := api.NewUserHandler(storage)
-	// POST /clerk-webhook
-	// first argument is the entry-point, second is the handler function
 	functions.HTTP("fn-clerk-webhook", handler.ClerkWebHookHandler)
 }

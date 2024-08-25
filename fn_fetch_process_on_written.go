@@ -33,10 +33,11 @@ func init() {
 
 	slog.SetDefault(logger)
 
-	functions.CloudEvent("fn-fetch-process-basic-info", Parser)
+	functions.CloudEvent("fn-fetch-process-on-written", Parser)
 }
 
 // Parser ...
+// TODO(@perebaj): improve the desing of functions that are triggered by cloud events like im doing in the http functions
 func Parser(_ context.Context, event event.Event) error {
 	var data firestoredata.DocumentEventData
 	err := proto.Unmarshal(event.Data(), &data)
