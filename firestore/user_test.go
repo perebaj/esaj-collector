@@ -131,3 +131,60 @@ func TestStorage_DeleteUser(t *testing.T) {
 
 	require.NotNil(t, m["deleted_at"])
 }
+
+func TestStorage_GetUser(t *testing.T) {
+	ctx := context.TODO()
+
+	ctx = tracing.SetTraceIDInContext(ctx, "test-trace-id")
+	c, err := fs.NewClient(ctx, projectID)
+	require.NoError(t, err)
+	defer cleanup(t, c)
+
+	storage := firestore.NewStorage(c, projectID)
+
+	event := clerk.WebHookEvent{
+		Data: clerk.Data{
+			ID:        "123",
+			FirstName: "John",
+			LastName:  "Doe",
+			EmailAddresses: []clerk.EmailAddress{
+				{
+					EmailAddress: "teste",
+					ID:           "123",
+					LinkedTo:     []any{"123"},
+					Object:       "email",
+				},
+			},
+			ImageURL:  "image",
+			Birthday:  "birday",
+			CreatedAt: 1654012591835,
+			UpdatedAt: 1654012591835,
+		},
+	}
+
+	err = storage.SaveUser(ctx, event)
+	require.NoError(t, err)
+
+	user, err := storage.GetUser(ctx, "123")
+	require.NoError(t, err)
+
+	t.Logf("printing user: %+v", user)
+	require.Equal(t, event.Data.ID, user.ID)
+	require.Equal(t, event.Data.FirstName, user.FirstName)
+	require.Equal(t, event.Data.LastName, user.LastName)
+	// TODO(@perebaj) parser the email addresses to validate the fields in the map
+	require.NotNil(t, user.EmailAddresses)
+	require.Equal(t, event.Data.ImageURL, user.ImageURL)
+	require.Equal(t, event.Data.Birthday, user.Birthday)
+	require.Equal(t, "2022-05-31T12:56:31-03:00", user.CreatedAt)
+	require.Equal(t, "2022-05-31T12:56:31-03:00", user.UpdatedAt)
+	require.Equal(t, "test-trace-id", user.TraceID)
+	require.Empty(t, user.DeletedAt)
+
+	// Get a user that doesn't exist, it shouldn't return an error
+	// just an empty user
+	user, err = storage.GetUser(ctx, "non-exitent")
+	require.NoError(t, err)
+
+	require.Equal(t, firestore.User{}, user)
+}

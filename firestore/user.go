@@ -9,6 +9,8 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/perebaj/esaj/clerk"
 	"github.com/perebaj/esaj/tracing"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // SaveUser receive a generic clerk webhook event and save the user in the firestore database
@@ -51,4 +53,41 @@ func (s *Storage) DeleteUser(ctx context.Context, event clerk.WebHookEvent) erro
 	})
 
 	return err
+}
+
+type User struct {
+	ID             string `firestore:"id"`
+	FirstName      string `firestore:"first_name"`
+	LastName       string `firestore:"last_name"`
+	EmailAddresses []any  `firestore:"email_addresses"`
+	ImageURL       string `firestore:"image_url"`
+	Birthday       string `firestore:"birthday"`
+	CreatedAt      string `firestore:"created_at"`
+	UpdatedAt      string `firestore:"updated_at"`
+	DeletedAt      string `firestore:"deleted_at"`
+	TraceID        string `firestore:"trace_id"`
+}
+
+func (s *Storage) GetUser(ctx context.Context, userID string) (User, error) {
+	traceID := tracing.GetTraceIDFromContext(ctx)
+	slog.Info(fmt.Sprintf("getting user %s", userID), "traceID", traceID, "user_id", userID)
+	collection := s.client.Collection("users")
+	docRef := collection.Doc(userID)
+
+	doc, err := docRef.Get(ctx)
+	if status.Code(err) == codes.NotFound {
+		return User{}, nil
+	}
+
+	if err != nil {
+		return User{}, fmt.Errorf("error getting user %s: %w", userID, err)
+	}
+
+	var user User
+	err = doc.DataTo(&user)
+	if err != nil {
+		return User{}, fmt.Errorf("error parsing user data: %w", err)
+	}
+
+	return user, nil
 }
