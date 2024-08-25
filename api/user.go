@@ -89,6 +89,8 @@ func (h UserHandler) createUser(ctx context.Context, clerkWebHook clerk.WebHookE
 	return err
 }
 
+// GetUserHandler is a handler that receives a user_id and return the user data
+// If the user does not exist, it will return a 404 status code
 func (h UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	traceID := r.Header.Get(GCPTraceHeader)
 	ctx := r.Context()

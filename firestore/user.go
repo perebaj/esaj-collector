@@ -55,6 +55,7 @@ func (s *Storage) DeleteUser(ctx context.Context, event clerk.WebHookEvent) erro
 	return err
 }
 
+// User is the struct that represents the user in the firestore database
 type User struct {
 	ID             string `firestore:"id"`
 	FirstName      string `firestore:"first_name"`
@@ -68,6 +69,8 @@ type User struct {
 	TraceID        string `firestore:"trace_id"`
 }
 
+// GetUser get a user from the firestore database
+// If the user does not exist, it will return an empty user and a nil error.
 func (s *Storage) GetUser(ctx context.Context, userID string) (User, error) {
 	traceID := tracing.GetTraceIDFromContext(ctx)
 	slog.Info(fmt.Sprintf("getting user %s", userID), "traceID", traceID, "user_id", userID)
