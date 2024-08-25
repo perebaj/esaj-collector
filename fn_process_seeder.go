@@ -1,4 +1,5 @@
 // Package collector ...
+// this function will be triggered by an http request, it will scrape the esaj website and save all processes URLs given an OAB number
 package collector
 
 import (
@@ -50,5 +51,5 @@ func init() {
 	handler := api.NewHandler(storage, esajClient)
 	// POST /oab-seeder?oab=123456
 	// first argument is the entry-point, second is the handler function
-	functions.HTTP("fn-oab-seeder", handler.OabSeederHandler)
+	functions.HTTP("fn-process-seeder", handler.OabSeederHandler)
 }

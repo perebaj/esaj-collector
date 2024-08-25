@@ -1,11 +1,11 @@
-gcloud functions deploy fn-fetch-process-basic-info \
+gcloud functions deploy fn-fetch-process-on-written \
 --gen2 \
 --runtime=go122 \
 --allow-unauthenticated \
 --region=southamerica-east1 \
 --trigger-location=southamerica-east1 \
 --source=. \
---entry-point=fn-fetch-process-basic-info \
+--entry-point=fn-fetch-process-on-written \
 --trigger-event-filters=type=google.cloud.firestore.document.v1.written \
 --trigger-event-filters=database='blup-db' \
 --trigger-event-filters-path-pattern=document='process_seeds/{process}'
