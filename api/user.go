@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/perebaj/esaj/clerk"
+	"github.com/perebaj/esaj/firestore"
 	"github.com/perebaj/esaj/tracing"
 )
 
@@ -18,6 +19,7 @@ import (
 type UserStorage interface {
 	SaveUser(ctx context.Context, user clerk.WebHookEvent) error
 	DeleteUser(ctx context.Context, user clerk.WebHookEvent) error
+	GetUser(ctx context.Context, userID string) (firestore.User, error)
 }
 
 // UserHandler gather third party services to create an user
@@ -85,4 +87,43 @@ func (h UserHandler) ClerkWebHookHandler(w http.ResponseWriter, r *http.Request)
 func (h UserHandler) createUser(ctx context.Context, clerkWebHook clerk.WebHookEvent) error {
 	err := h.storage.SaveUser(ctx, clerkWebHook)
 	return err
+}
+
+// GetUserHandler is a handler that receives a user_id and return the user data
+// If the user does not exist, it will return a 404 status code
+func (h UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
+	traceID := r.Header.Get(GCPTraceHeader)
+	ctx := r.Context()
+
+	ctx = tracing.SetTraceIDInContext(ctx, traceID)
+
+	logger := slog.With("traceID", traceID)
+
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		http.Error(w, "user_id is required", http.StatusBadRequest)
+		logger.Error("user_id is required")
+		return
+	}
+
+	user, err := h.storage.GetUser(ctx, userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("error getting user", "error", err)
+		return
+	}
+
+	if user.ID == "" || user.DeletedAt != "" {
+		http.Error(w, "user not found", http.StatusNotFound)
+		logger.Info("user not found", "user_id", userID)
+		return
+	}
+
+	logger.Info(fmt.Sprintf("user %s found", userID), "user", user)
+	err = json.NewEncoder(w).Encode(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("error encoding user", "error", err)
+		return
+	}
 }

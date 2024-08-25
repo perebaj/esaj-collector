@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	clerk "github.com/perebaj/esaj/clerk"
+	firestore "github.com/perebaj/esaj/firestore"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -52,6 +53,21 @@ func (m *MockUserStorage) DeleteUser(ctx context.Context, user clerk.WebHookEven
 func (mr *MockUserStorageMockRecorder) DeleteUser(ctx, user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockUserStorage)(nil).DeleteUser), ctx, user)
+}
+
+// GetUser mocks base method.
+func (m *MockUserStorage) GetUser(ctx context.Context, userID string) (firestore.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUser", ctx, userID)
+	ret0, _ := ret[0].(firestore.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUser indicates an expected call of GetUser.
+func (mr *MockUserStorageMockRecorder) GetUser(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockUserStorage)(nil).GetUser), ctx, userID)
 }
 
 // SaveUser mocks base method.

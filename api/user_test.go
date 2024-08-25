@@ -1,12 +1,14 @@
 package api_test
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/perebaj/esaj/api"
+	"github.com/perebaj/esaj/firestore"
 	"github.com/perebaj/esaj/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -148,4 +150,84 @@ func TestUserHandler_ClerkWebHookHandler_deleteUser(t *testing.T) {
 	userHandler.ClerkWebHookHandler(w, req)
 
 	require.Equal(t, 200, w.Code)
+}
+
+func TestUserHandler_GetUserHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userStorageMock := mock.NewMockUserStorage(ctrl)
+
+	user := firestore.User{
+		ID:             "123",
+		FirstName:      "John",
+		LastName:       "Doe",
+		EmailAddresses: []any{},
+		ImageURL:       "image",
+		Birthday:       "birday",
+		CreatedAt:      "2022-01-01T00:00:00Z",
+		UpdatedAt:      "2022-01-01T00:00:00Z",
+		DeletedAt:      "",
+		TraceID:        "test-trace-id",
+	}
+
+	userStorageMock.EXPECT().GetUser(gomock.Any(), "123").Return(user, nil)
+
+	req := httptest.NewRequest("GET", "/?user_id=123", nil)
+	w := httptest.NewRecorder()
+
+	userHandler := api.NewUserHandler(userStorageMock)
+	userHandler.GetUserHandler(w, req)
+
+	require.Equal(t, 200, w.Code)
+	var gotUser firestore.User
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&gotUser))
+
+	require.Equal(t, user, gotUser)
+}
+
+func TestUserHandler_GetUserHandler_emptyUserID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userStorageMock := mock.NewMockUserStorage(ctrl)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+
+	userHandler := api.NewUserHandler(userStorageMock)
+	userHandler.GetUserHandler(w, req)
+
+	require.Equal(t, 400, w.Code)
+}
+
+func TestUserHandler_GetUserHandler_userNotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userStorageMock := mock.NewMockUserStorage(ctrl)
+
+	userStorageMock.EXPECT().GetUser(gomock.Any(), "123").Return(firestore.User{}, nil)
+
+	req := httptest.NewRequest("GET", "/?user_id=123", nil)
+	w := httptest.NewRecorder()
+
+	userHandler := api.NewUserHandler(userStorageMock)
+	userHandler.GetUserHandler(w, req)
+
+	require.Equal(t, 404, w.Code)
+}
+
+func TestUserHandler_GetUserHandler_userDeleted(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userStorageMock := mock.NewMockUserStorage(ctrl)
+
+	user := firestore.User{
+		ID:        "123",
+		DeletedAt: "2022-01-01T00:00:00Z",
+	}
+
+	userStorageMock.EXPECT().GetUser(gomock.Any(), "123").Return(user, nil)
+
+	req := httptest.NewRequest("GET", "/?user_id=123", nil)
+	w := httptest.NewRecorder()
+
+	userHandler := api.NewUserHandler(userStorageMock)
+	userHandler.GetUserHandler(w, req)
+
+	require.Equal(t, 404, w.Code)
 }
