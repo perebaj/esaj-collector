@@ -1,4 +1,5 @@
 // Package clerk gather all functions that deal with the clerk api. Including webhooks, authentication and user creation.
+// Clerk is a third party service that provides authentication and user management.
 package clerk
 
 // WebHookEvent is the struct that represents the webhook event from clerk
@@ -40,7 +41,7 @@ type Data struct {
 	Web3Wallets []any `json:"web3_wallets"`
 }
 
-// EmailAddress is the struct that represents the email address from the webhook event
+// EmailAddress is the struct gathers user email address data
 type EmailAddress struct {
 	EmailAddress string `json:"email_address"`
 	ID           string `json:"id"`

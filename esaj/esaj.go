@@ -92,7 +92,7 @@ func (ec Client) Run(ctx context.Context, processID string) error {
 }
 
 // searchDo searches for a specific process in the TJSP website and return the processCode. An ID in the format 1H000H91J0000.
-// processID: The process ID in the format: 0000001-02.2021.8.26.0000
+// processID: The process ID in the format = 0000001-02.2021.8.26.0000
 func (ec Client) searchDo(processID string) (string, error) {
 	numeroDigitoAnoUnificado, err := numeroDigitoAnoUnificado(processID)
 	if err != nil {
