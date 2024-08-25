@@ -42,5 +42,8 @@ func init() {
 	slog.Info("storage initialized")
 
 	handler := api.NewUserHandler(storage)
+	// GET /?user_id=123456
+	// Expected response: 200 OK with the user data
+	// If the user does not exist, it will return a 404 status code
 	functions.HTTP("fn-get-user", handler.GetUserHandler)
 }
