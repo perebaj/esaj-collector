@@ -18,3 +18,4 @@ The first open-source brazilian court data collector.
 - ESAJ_PASSWORD
 - LLAMA_CLOUD_API_KEY
 - OPENAI_API_TOKEN
+- CLERK_SECRET_KEY

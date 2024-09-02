@@ -8,6 +8,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/chromedp/cdproto v0.0.0-20240721024200-dac8efcb39ce
 	github.com/chromedp/chromedp v0.9.5
+	github.com/clerk/clerk-sdk-go/v2 v2.0.5
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/googleapis/google-cloudevents-go v0.8.0
 	github.com/sashabaranov/go-openai v1.27.1
@@ -28,6 +29,7 @@ require (
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
