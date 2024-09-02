@@ -1,8 +1,0 @@
-gcloud functions deploy fn-clerk-webhook \
---gen2 \
---runtime=go122 \
---allow-unauthenticated \
---region=southamerica-east1	 \
---source=. \
---entry-point=fn-clerk-webhook \
---trigger-http

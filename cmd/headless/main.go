@@ -7,14 +7,13 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/perebaj/esaj/esaj"
-	"github.com/perebaj/esaj/logger"
+	"github.com/perebaj/esaj"
 )
 
 func main() {
-	logger, err := logger.NewLoggerSlog(logger.ConfigLogger{
-		Level:  logger.LevelDebug,
-		Format: logger.FormatLogFmt,
+	logger, err := esaj.NewLoggerSlog(esaj.ConfigLogger{
+		Level:  esaj.LevelDebug,
+		Format: esaj.FormatLogFmt,
 	})
 
 	if err != nil {
