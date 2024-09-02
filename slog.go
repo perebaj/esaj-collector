@@ -1,5 +1,5 @@
-// Package logger from cmd/slog.go aims to gather all the functions that initialize the structure logs.
-package logger
+// Package esaj from slog.go aims to gather all the functions that initialize the structure logs.
+package esaj
 
 import (
 	"fmt"
