@@ -12,7 +12,7 @@ var rootCmd = &cobra.Command{
 	Use:   "esaj-collector",
 	Short: "Extract unstructured data from PDFs and transform it into structured data",
 	Long:  `Use AI to extract relevant information from the data`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// Do Stuff Here
 	},
 }
@@ -31,7 +31,7 @@ var collectCmd = &cobra.Command{
 	Use:   "collect",
 	Short: "Collect all data from ESAJ related to a specific OAB number or process",
 	Long:  `Collect all data from ESAJ related to a specific OAB number or process`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// Do Stuff Here
 	},
 }
@@ -40,11 +40,12 @@ var downloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: "Download all PDFs documents related to a specific process",
 	Long:  `Download all PDFs documents related to a specific process`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// Do Stuff Here
 	},
 }
 
+// Execute is the entry point for the command line interface.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
