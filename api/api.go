@@ -18,6 +18,7 @@ const GCPTraceHeader = "X-Cloud-Trace-Context"
 // Storage is an interface that defines the methods to deal with storage
 type Storage interface {
 	SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) error
+	ProcessBasicInfoByOAB(ctx context.Context, oab string) ([]esaj.ProcessBasicInfo, error)
 }
 
 type esajClient interface {
@@ -69,4 +70,29 @@ func (h Handler) OabSeederHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
+}
+
+// ProcessesByOABHandler is a handler that receives a oab query parameter and search for the processes in the firestore database
+func (h Handler) ProcessesByOABHandler(w http.ResponseWriter, r *http.Request) {
+	traceID := r.Header.Get(GCPTraceHeader)
+	ctx := r.Context()
+
+	ctx = tracing.SetTraceIDInContext(ctx, traceID)
+
+	logger := slog.With("traceID", traceID)
+	oab := r.URL.Query().Get("oab")
+	if oab == "" {
+		http.Error(w, "oab is required", http.StatusBadRequest)
+		return
+	}
+
+	processes, err := h.storage.ProcessBasicInfoByOAB(ctx, oab)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("error searching by oab", "error", err)
+		return
+	}
+
+	logger.Info("processes found", "processes", processes)
+	w.WriteHeader(http.StatusOK)
 }

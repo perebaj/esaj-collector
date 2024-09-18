@@ -3,12 +3,15 @@ package firestore
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/perebaj/esaj/esaj"
 	"github.com/perebaj/esaj/tracing"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Storage is a struct that holds the firestore client and the projectID and database name
@@ -87,11 +90,16 @@ func (s *Storage) GetSeedsByOAB(ctx context.Context, oab string) ([]ProcessSeed,
 // SaveProcessBasicInfo saves the process basic information in the firestore database
 func (s *Storage) SaveProcessBasicInfo(ctx context.Context, pBasicInfo esaj.ProcessBasicInfo) error {
 	traceID := tracing.GetTraceIDFromContext(ctx)
-	slog.Info("saving process basic info", "process_id", pBasicInfo.ProcessID, "trace_id", traceID)
+	logger := slog.With("traceID", traceID)
+	logger.Info("saving process basic info", "process_id", pBasicInfo.ProcessID)
 
 	collection := s.client.Collection("process_basic_info")
 	docRef := collection.Doc(pBasicInfo.ProcessID)
 
+	doc, err := docRef.Get(ctx)
+	if err != nil && status.Code(err) != codes.NotFound {
+		return fmt.Errorf("error getting document: %w", err)
+	}
 	m := make(map[string]interface{})
 	m["process_id"] = pBasicInfo.ProcessID
 	m["foro_code"] = pBasicInfo.ProcessForo
@@ -105,6 +113,45 @@ func (s *Storage) SaveProcessBasicInfo(ctx context.Context, pBasicInfo esaj.Proc
 	m["trace_id"] = traceID
 	m["url"] = pBasicInfo.URL
 
-	_, err := docRef.Set(ctx, m)
+	if status.Code(err) == codes.NotFound {
+		m["oabs"] = firestore.ArrayUnion(pBasicInfo.OAB)
+	} else {
+		existingOABs := doc.Data()["oabs"].([]interface{})
+		existingOABs = append(existingOABs, pBasicInfo.OAB)
+		m["oabs"] = firestore.ArrayUnion(existingOABs...)
+	}
+	_, err = docRef.Set(ctx, m)
+
 	return err
+}
+
+// ProcessBasicInfoByOAB returns all process that has the same OAB identifier
+func (s *Storage) ProcessBasicInfoByOAB(ctx context.Context, oab string) ([]esaj.ProcessBasicInfo, error) {
+	collection := s.client.Collection("process_basic_info")
+	iter := collection.Where("oabs", "array-contains", oab).Documents(ctx)
+
+	doc, err := iter.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var processBasicInfo []esaj.ProcessBasicInfo
+	for _, d := range doc {
+		p := esaj.ProcessBasicInfo{
+			ProcessID:   d.Data()["process_id"].(string),
+			ProcessForo: d.Data()["foro_code"].(string),
+			ForoName:    d.Data()["foro_name"].(string),
+			ProcessCode: d.Data()["process_code"].(string),
+			Judge:       d.Data()["judge"].(string),
+			Class:       d.Data()["class"].(string),
+			Claimant:    d.Data()["claimant"].(string),
+			Defendant:   d.Data()["defendant"].(string),
+			Vara:        d.Data()["vara"].(string),
+			URL:         d.Data()["url"].(string),
+		}
+
+		processBasicInfo = append(processBasicInfo, p)
+	}
+
+	return processBasicInfo, nil
 }

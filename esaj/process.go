@@ -65,6 +65,8 @@ type ChildrenData struct {
 
 // ProcessBasicInfo as the name says, is the basic information of a process.
 type ProcessBasicInfo struct {
+	// OAB is the OAB of the process.
+	OAB string
 	// ProcessID example: "1007573-30.2024.8.26.0229"
 	ProcessID string
 	// ProcessForo example: "0053"

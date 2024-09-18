@@ -1,0 +1,2 @@
+curl -X POST "https://southamerica-east1-blup-432616.cloudfunctions.net/fn-process-seeder?oab=103289" \
+    -H "Authorization: Bearer $(gcloud auth print-identity-token)"

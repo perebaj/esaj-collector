@@ -18,11 +18,6 @@ esaj:
 esaj-function:
 	GOOS=linux GOARCH=amd64 go build -o ./functions ./cmd/esaj
 
-## publish will build the esaj code and deploy it to the azure. Usage `make publish`
-.PHONY: publish
-publish: esaj-function
-	cd $(functions-folder) && func azure functionapp publish $(esaj-api-function)
-
 ## Run the pdf to markdown service from cmd/pdf2markdown/main.go
 .PHONY: pdf2markdown
 pdf2markdown:

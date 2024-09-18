@@ -8,6 +8,7 @@ package firestore_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	fs "cloud.google.com/go/firestore"
 	"github.com/perebaj/esaj/esaj"
@@ -144,20 +145,9 @@ func TestStorage_GetSeedsByOAB(t *testing.T) {
 }
 
 func TestStorage_SaveProcessBasicInfo(t *testing.T) {
-	pBasicInfo := esaj.ProcessBasicInfo{
-		ProcessID:   "123",
-		ProcessForo: "123",
-		ForoName:    "http://teste.com",
-		ProcessCode: "456",
-		Judge:       "http://example.com",
-		Class:       "123",
-		Claimant:    "http://teste1.com",
-		Defendant:   "123",
-		Vara:        "http://teste.com",
-		URL:         "http://example.com",
-	}
-
-	ctx := context.TODO()
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 	ctx = tracing.SetTraceIDInContext(ctx, "test-trace-id")
 
 	c, err := fs.NewClient(ctx, projectID)
@@ -166,19 +156,30 @@ func TestStorage_SaveProcessBasicInfo(t *testing.T) {
 	require.NoError(t, err)
 	storage := firestore.NewStorage(c, projectID)
 
+	pBasicInfo := esaj.ProcessBasicInfo{
+		ProcessID:   "123",
+		ProcessForo: "123",
+		ForoName:    "Foro Test",
+		ProcessCode: "456",
+		Judge:       "Judge Test",
+		Class:       "Class Test",
+		Claimant:    "Claimant Test",
+		Defendant:   "Defendant Test",
+		Vara:        "Vara Test",
+		URL:         "http://example.com",
+		OAB:         "OAB123",
+	}
+
+	// Test initial save
 	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo)
 	require.NoError(t, err)
 
 	collection := c.Collection("process_basic_info")
-
-	iter := collection.Documents(ctx)
-	docs, err := iter.GetAll()
+	doc, err := collection.Doc(pBasicInfo.ProcessID).Get(ctx)
 	require.NoError(t, err)
-
-	require.Len(t, docs, 1)
-
 	var got map[string]interface{}
-	docs[0].DataTo(&got)
+	err = doc.DataTo(&got)
+	require.NoError(t, err)
 
 	require.Equal(t, pBasicInfo.ProcessID, got["process_id"])
 	require.Equal(t, pBasicInfo.ProcessForo, got["foro_code"])
@@ -191,19 +192,136 @@ func TestStorage_SaveProcessBasicInfo(t *testing.T) {
 	require.Equal(t, pBasicInfo.Vara, got["vara"])
 	require.Equal(t, "test-trace-id", got["trace_id"])
 	require.Equal(t, pBasicInfo.URL, got["url"])
+	require.Len(t, got["oabs"], 1)
 
-	// update a field to validate if the document is updated
-	pBasicInfo.ForoName = "updated value"
+	// Test update with same OAB
+	pBasicInfo.ForoName = "Updated Foro"
+	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo)
+	require.NoError(t, err)
+
+	doc, err = collection.Doc(pBasicInfo.ProcessID).Get(ctx)
+	require.NoError(t, err)
+	err = doc.DataTo(&got)
+	require.NoError(t, err)
+
+	require.Equal(t, "Updated Foro", got["foro_name"])
+	require.Len(t, got["oabs"], 1)
+
+	// Test update with new OAB
+	pBasicInfo.OAB = "OAB456"
+	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo)
+	require.NoError(t, err)
+
+	doc, err = collection.Doc(pBasicInfo.ProcessID).Get(ctx)
+	require.NoError(t, err)
+	err = doc.DataTo(&got)
+	require.NoError(t, err)
+
+	require.Len(t, got["oabs"], 2)
+
+	// Test update with existing OAB (should not add duplicate)
+	pBasicInfo.OAB = "OAB123"
+	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo)
+	require.NoError(t, err)
+
+	doc, err = collection.Doc(pBasicInfo.ProcessID).Get(ctx)
+	require.NoError(t, err)
+	err = doc.DataTo(&got)
+	require.NoError(t, err)
+
+	require.Len(t, got["oabs"], 2)
+}
+
+func TestStorage_ProcessBasicInfoByOAB(t *testing.T) {
+	ps := []esaj.ProcessSeed{
+		{
+			ProcessID: "123",
+			OAB:       "123",
+			URL:       "http://teste.com",
+		},
+		{
+			ProcessID: "456",
+			OAB:       "456",
+			URL:       "http://example.com",
+		},
+		{
+			ProcessID: "789",
+			OAB:       "123",
+			URL:       "http://teste1.com",
+		},
+	}
+
+	ctx := context.TODO()
+
+	c, err := fs.NewClient(ctx, projectID)
+	defer cleanup(t, c)
+
+	require.NoError(t, err)
+	storage := firestore.NewStorage(c, projectID)
+	err = storage.SaveProcessSeeds(ctx, ps)
+
+	require.NoError(t, err)
+
+	pBasicInfo := esaj.ProcessBasicInfo{
+		ProcessID:   "123",
+		ProcessForo: "123",
+		ForoName:    "http://teste.com",
+		ProcessCode: "456",
+		Judge:       "http://example.com",
+		Class:       "123",
+		Claimant:    "http://teste1.com",
+		Defendant:   "123",
+		Vara:        "http://teste.com",
+		URL:         "http://example.com",
+		OAB:         "123",
+	}
 
 	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo)
 	require.NoError(t, err)
 
-	iter = collection.Documents(ctx)
-	docs, err = iter.GetAll()
+	pBasicInfo2 := esaj.ProcessBasicInfo{
+		ProcessID:   "789",
+		ProcessForo: "123",
+		ForoName:    "http://teste.com",
+		ProcessCode: "456",
+		Judge:       "http://example.com",
+		Class:       "123",
+		Claimant:    "http://teste1.com",
+		Defendant:   "123",
+		Vara:        "http://teste.com",
+		URL:         "http://example.com",
+		OAB:         "123",
+	}
+
+	err = storage.SaveProcessBasicInfo(ctx, pBasicInfo2)
 	require.NoError(t, err)
 
-	require.Len(t, docs, 1)
-	require.Equal(t, "updated value", docs[0].Data()["foro_name"])
+	got, err := storage.ProcessBasicInfoByOAB(ctx, "123")
+	require.NoError(t, err)
+
+	require.Len(t, got, 2)
+
+	require.Equal(t, pBasicInfo.ProcessID, got[0].ProcessID)
+	require.Equal(t, pBasicInfo.ProcessForo, got[0].ProcessForo)
+	require.Equal(t, pBasicInfo.ForoName, got[0].ForoName)
+	require.Equal(t, pBasicInfo.ProcessCode, got[0].ProcessCode)
+	require.Equal(t, pBasicInfo.Judge, got[0].Judge)
+	require.Equal(t, pBasicInfo.Class, got[0].Class)
+	require.Equal(t, pBasicInfo.Claimant, got[0].Claimant)
+	require.Equal(t, pBasicInfo.Defendant, got[0].Defendant)
+	require.Equal(t, pBasicInfo.Vara, got[0].Vara)
+	require.Equal(t, pBasicInfo.URL, got[0].URL)
+
+	require.Equal(t, pBasicInfo2.ProcessID, got[1].ProcessID)
+	require.Equal(t, pBasicInfo2.ProcessForo, got[1].ProcessForo)
+	require.Equal(t, pBasicInfo2.ForoName, got[1].ForoName)
+	require.Equal(t, pBasicInfo2.ProcessCode, got[1].ProcessCode)
+	require.Equal(t, pBasicInfo2.Judge, got[1].Judge)
+	require.Equal(t, pBasicInfo2.Class, got[1].Class)
+	require.Equal(t, pBasicInfo2.Claimant, got[1].Claimant)
+	require.Equal(t, pBasicInfo2.Defendant, got[1].Defendant)
+	require.Equal(t, pBasicInfo2.Vara, got[1].Vara)
+	require.Equal(t, pBasicInfo2.URL, got[1].URL)
 }
 
 // cleanup deletes all collections and documents in the firestore database

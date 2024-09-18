@@ -40,6 +40,21 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
+// ProcessBasicInfoByOAB mocks base method.
+func (m *MockStorage) ProcessBasicInfoByOAB(ctx context.Context, oab string) ([]esaj.ProcessBasicInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessBasicInfoByOAB", ctx, oab)
+	ret0, _ := ret[0].([]esaj.ProcessBasicInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ProcessBasicInfoByOAB indicates an expected call of ProcessBasicInfoByOAB.
+func (mr *MockStorageMockRecorder) ProcessBasicInfoByOAB(ctx, oab any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessBasicInfoByOAB", reflect.TypeOf((*MockStorage)(nil).ProcessBasicInfoByOAB), ctx, oab)
+}
+
 // SaveProcessSeeds mocks base method.
 func (m *MockStorage) SaveProcessSeeds(ctx context.Context, ps []esaj.ProcessSeed) error {
 	m.ctrl.T.Helper()

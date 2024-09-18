@@ -1,0 +1,8 @@
+gcloud functions deploy fn-processes-by-oab \
+--gen2 \
+--runtime=go122 \
+--allow-unauthenticated \
+--region=southamerica-east1	 \
+--source=. \
+--entry-point=fn-processes-by-oab \
+--trigger-http
