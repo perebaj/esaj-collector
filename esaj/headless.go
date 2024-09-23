@@ -25,7 +25,7 @@ type Login struct {
 func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID string) (string, string, error) {
 	logger := slog.With("processID", processoID)
 
-	logger.Debug(fmt.Sprintf("GetCookies headless initialized with the headless option: %v", headless))
+	logger.Info(fmt.Sprintf("GetCookies headless initialized with the headless option: %v", headless))
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
@@ -44,7 +44,7 @@ func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID 
 	if err != nil {
 		return "", "", fmt.Errorf("bulding the searchDoURL: %v", err)
 	}
-	logger.Debug("searchDoURL", "url", searchDo)
+	logger.Info("searchDoURL", "url", searchDo)
 
 	err = chromedp.Run(ctx,
 		chromedp.Navigate(`https://esaj.tjsp.jus.br/sajcas/login`),
@@ -66,7 +66,7 @@ func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID 
 				return fmt.Errorf("could not get the url: %v", err)
 			}
 
-			logger.Debug(fmt.Sprintf("searchDoURLWithProcessCode: %s", searchDoURLWithProcessCode))
+			logger.Info(fmt.Sprintf("searchDoURLWithProcessCode: %s", searchDoURLWithProcessCode))
 
 			err = chromedp.Navigate(searchDoURLWithProcessCode).Do(ctx)
 			if err != nil {
@@ -113,9 +113,9 @@ func GetCookies(ctx context.Context, esajLogin Login, headless bool, processoID 
 			// pastaDigitalHREF parse the BodyText to a valid href to navigate to the pastadigital
 			pastaDigitalHREF := u.RawQuery
 
-			logger.Debug("parsed pasta digital href", "href", pastaDigitalHREF)
+			logger.Info("parsed pasta digital href", "href", pastaDigitalHREF)
 
-			cookies, err = navigatePastaVirtualURL(ctx, "https://esaj.tjsp.jus.br/pastadigital/abrirPastaProcessoDigital.do?"+pastaDigitalHREF)
+			cookies, err = navigatePastaVirtualURL(ctx, processoID, "https://esaj.tjsp.jus.br/pastadigital/abrirPastaProcessoDigital.do?"+pastaDigitalHREF)
 			if err != nil {
 				return fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)
 			}
@@ -202,15 +202,10 @@ func abrirPastaDigitalDoURL(processoCodigo string) string {
 	return fmt.Sprintf("https://esaj.tjsp.jus.br/cpopg/abrirPastaDigital.do?processo.codigo=%s", processoCodigo)
 }
 
-func navigatePastaVirtualURL(ctx context.Context, pastaVirtualURL string) ([]*network.Cookie, error) {
-	processID, err := getContextWithProcessID(ctx, ProcessIDContextKey)
-	if err != nil {
-		return nil, fmt.Errorf("error getting processID from context: %w", err)
-	}
-
+func navigatePastaVirtualURL(ctx context.Context, processID string, pastaVirtualURL string) ([]*network.Cookie, error) {
 	logger := slog.With("processID", processID)
-	logger.Debug("navigating to pastaVirtualURL", "url", pastaVirtualURL)
-	err = chromedp.Navigate(pastaVirtualURL).Do(ctx)
+	logger.Info("navigating to pastaVirtualURL", "url", pastaVirtualURL)
+	err := chromedp.Navigate(pastaVirtualURL).Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not navigate to pastaVirtualURL: %v", err)
 	}

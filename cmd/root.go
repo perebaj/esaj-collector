@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -111,21 +112,58 @@ var collectCmd = &cobra.Command{
 	},
 }
 
+var downloadCmd = &cobra.Command{
+	Use:   "download",
+	Short: "Download all PDFs documents related to a specific process",
+	Long:  `Download all PDFs documents related to a specific process`,
+	Run: func(cmd *cobra.Command, _ []string) {
+		processId, _ := cmd.Flags().GetString("process")
+		// output, _ := cmd.Flags().GetString("output")
+		username, _ := cmd.Flags().GetString("username")
+		password, _ := cmd.Flags().GetString("password")
+
+		if processId == "" {
+			fmt.Println("Error: You must provide a process ID")
+			_ = cmd.Usage()
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+
+		cookieSession, cookiePDFSession, err := esaj.GetCookies(ctx, esaj.Login{
+			Username: username,
+			Password: password,
+		}, false, processId)
+		if err != nil {
+			fmt.Println("Error getting cookies:", err)
+			return
+		}
+
+		eClient := esaj.New(esaj.Config{
+			CookieSession:    cookieSession,
+			CookiePDFSession: cookiePDFSession,
+		}, &http.Client{
+			Timeout: 60 * time.Second,
+		})
+
+		eClient.Run(ctx, processId)
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(collectCmd)
 	rootCmd.AddCommand(downloadCmd)
 	collectCmd.Flags().StringP("oab", "o", "", "OAB number to search")
 	collectCmd.Flags().StringP("process", "p", "", "Process ID to search")
 	collectCmd.Flags().StringP("output", "O", "processes.json", "Output file")
-}
 
-var downloadCmd = &cobra.Command{
-	Use:   "download",
-	Short: "Download all PDFs documents related to a specific process",
-	Long:  `Download all PDFs documents related to a specific process`,
-	Run: func(_ *cobra.Command, _ []string) {
-		// Do Stuff Here
-	},
+	downloadCmd.Flags().StringP("process", "p", "", "Process ID to download")
+	downloadCmd.Flags().StringP("output", "O", "documents", "Output directory")
+	downloadCmd.Flags().StringP("username", "u", "", "Username to login")
+	downloadCmd.Flags().StringP("password", "P", "", "Password to login")
+	downloadCmd.MarkFlagRequired("username")
+	downloadCmd.MarkFlagRequired("password")
+	downloadCmd.MarkFlagRequired("process")
 }
 
 // Execute is the entry point for the command line interface.

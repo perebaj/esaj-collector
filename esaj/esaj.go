@@ -82,10 +82,13 @@ func (ec Client) Run(ctx context.Context, processID string) error {
 
 	for _, p := range processes {
 		if slices.Contains(availableProcessStatus, strings.ToLower(p.Data.Title)) {
-			err = ec.GetPDF(ctx, processID, p.Children[0].ChildernData)
+			body, err := ec.GetPDF(ctx, processID, p.Children[0].ChildernData)
 			if err != nil {
 				return fmt.Errorf("error getting pdf: %w", err)
 			}
+
+			fileName := "tmp/" + processID + "_" + p.Data.Title + ".pdf"
+			os.WriteFile(fileName, body, 0644)
 		}
 	}
 	return nil
@@ -212,19 +215,19 @@ func (ec Client) abrirPastaProcessoDigital(processCode string) ([]Process, error
 }
 
 // GetPDF fetch the pdf document from the TJSP website.
-func (ec Client) GetPDF(_ context.Context, processID string, cData ChildrenData) error {
+func (ec Client) GetPDF(_ context.Context, processID string, cData ChildrenData) ([]byte, error) {
 	hrefGetPDF := ec.URL + "/pastadigital/getPDF.do?" + cData.Parametros
 
 	req, err := http.NewRequest("GET", hrefGetPDF, nil)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 	req.Header.Set("Cookie", ec.Config.CookiePDFSession)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("error doing request %w", err)
+		return nil, fmt.Errorf("error doing request %w", err)
 	}
 
 	defer func() {
@@ -233,21 +236,22 @@ func (ec Client) GetPDF(_ context.Context, processID string, cData ChildrenData)
 
 	bodyByte, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("error reading body: %w", err)
+		return nil, fmt.Errorf("error reading body: %w", err)
 	}
 
 	if strings.Contains(string(bodyByte), "Sua sessão expirou") {
-		return ErrSessionExpired
+		return nil, ErrSessionExpired
 	}
 
-	fileName := "tmp/" + processID + "_" + cData.Title + ".pdf"
-	err = os.WriteFile(fileName, bodyByte, 0644)
-	if err != nil {
-		return fmt.Errorf("error writing file: %w", err)
-	}
-	slog.Info(fmt.Sprintf("pdf downloaded successfully and saved in: %s", fileName))
+	return bodyByte, nil
+	// fileName := "tmp/" + processID + "_" + cData.Title + ".pdf"
+	// err = os.WriteFile(fileName, bodyByte, 0644)
+	// if err != nil {
+	// 	return fmt.Errorf("error writing file: %w", err)
+	// }
+	// slog.Info(fmt.Sprintf("pdf downloaded successfully and saved in: %s", fileName))
 
-	return nil
+	// return nil
 }
 
 // FetchBasicProcessInfo fetch the html page of the process that contains basic information about legal action.

@@ -373,7 +373,7 @@ func Test_Client_GetPDF_invalidAccess(t *testing.T) {
 	}
 
 	processID := "1029989-06.2022.8.26.0053"
-	err := esajClient.GetPDF(context.Background(), processID, cData)
+	_, err := esajClient.GetPDF(context.Background(), processID, cData)
 	require.ErrorIs(t, err, ErrSessionExpired)
 }
 
