@@ -66,26 +66,26 @@ type ChildrenData struct {
 // ProcessBasicInfo as the name says, is the basic information of a process.
 type ProcessBasicInfo struct {
 	// OAB is the OAB of the process.
-	OAB string
+	OAB string `json:"oab"`
 	// ProcessID example: "1007573-30.2024.8.26.0229"
-	ProcessID string
+	ProcessID string `json:"process_id"`
 	// ProcessForo example: "0053"
-	ProcessForo string
+	ProcessForo string `json:"process_foro"`
 	// ForoName example: "Tribunal de Justiça do Estado de São Paulo"/"Foro de Hortolândia"
-	ForoName string
+	ForoName string `json:"foro_name"`
 	// ProcessCode. Example: 6D0008MAZ0000
-	ProcessCode string
+	ProcessCode string `json:"process_code"`
 	// Judge...
-	Judge string
+	Judge string `json:"judge"`
 	// Class is the class of the process. Example: "Habilitação de Crédito"
-	Class string
+	Class string `json:"class"`
 	// Claimant is who is claiming for something in the process.
-	Claimant string
+	Claimant string `json:"claimant"`
 	// Defendant is who is being claimed in the process.
-	Defendant string
+	Defendant string `json:"defendant"`
 	// Vara is the court where the process is being processed.
-	Vara string
+	Vara string `json:"vara"`
 	// URL is the URL of the process in the TJSP website.
 	// Example: https://esaj.tjsp.jus.br/cpopg/show.do?processo.codigo=1HZX5Q48A0000&processo.foro=53&paginaConsulta=17&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=103289&cdForo=-1
-	URL string
+	URL string `json:"url"`
 }

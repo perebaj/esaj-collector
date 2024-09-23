@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -61,7 +62,13 @@ var collectCmd = &cobra.Command{
 				fmt.Println("Error fetching basic process info:", err)
 				return
 			}
-			fmt.Println("Basic process info:", processBasicInfo)
+			fmt.Printf("Basic process info: %+v\n", processBasicInfo)
+			resp, err := json.Marshal(processBasicInfo)
+			if err != nil {
+				fmt.Println("Error marshalling basic process info:", err)
+				return
+			}
+			fmt.Println(string(resp))
 		}
 	},
 }
