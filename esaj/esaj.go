@@ -70,7 +70,7 @@ func New(config Config, client *http.Client) *Client {
 
 // Run is the main function of the Client. It searches for the process in the TJSP website and download the PDF documents.
 func (ec Client) Run(ctx context.Context, processID string) error {
-	processCode, err := ec.searchDo(processID)
+	processCode, err := ec.ProcessCodeByProcessID(processID)
 	if err != nil {
 		return fmt.Errorf("error searching process: %w", err)
 	}
@@ -91,15 +91,15 @@ func (ec Client) Run(ctx context.Context, processID string) error {
 	return nil
 }
 
-// searchDo searches for a specific process in the TJSP website and return the processCode. An ID in the format 1H000H91J0000.
+// ProcessCodeByProcessID searches for a specific process in the TJSP website and return the processCode. An ID in the format 1H000H91J0000.
 // processID: The process ID in the format = 0000001-02.2021.8.26.0000
-func (ec Client) searchDo(processID string) (string, error) {
+func (ec Client) ProcessCodeByProcessID(processID string) (string, error) {
 	numeroDigitoAnoUnificado, err := numeroDigitoAnoUnificado(processID)
 	if err != nil {
 		return "", err
 	}
 
-	foroNumeroUnificado, err := foroNumeroUnificado(processID)
+	foroNumeroUnificado, err := ForoNumeroUnificado(processID)
 	if err != nil {
 		return "", err
 	}
@@ -278,14 +278,14 @@ func (ec Client) FetchBasicProcessInfo(ctx context.Context, u string, processID 
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		logger.Error("error creating request", "error", err)
+		logger.Error("error creating request", "error", err, "url", url)
 		return nil, err
 	}
 	req.Header.Set("Cookie", ec.Config.CookieSession)
 
 	resp, err := ec.Client.Do(req)
 	if err != nil {
-		logger.Error("error doing request", "error", err)
+		logger.Error("error doing request", "error", err, "url", url)
 		return nil, err
 	}
 
@@ -295,13 +295,13 @@ func (ec Client) FetchBasicProcessInfo(ctx context.Context, u string, processID 
 
 	bodyByte, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("error reading body", "error", err)
+		logger.Error("error reading body", "error", err, "url", url)
 		return nil, err
 	}
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyByte)))
 	if err != nil {
-		logger.Error("error initializing goquery new document from reader", "error", err)
+		logger.Error("error initializing goquery new document from reader", "error", err, "url", url)
 		return nil, err
 	}
 
@@ -334,7 +334,7 @@ func (ec Client) FetchBasicProcessInfo(ctx context.Context, u string, processID 
 	})
 
 	if len(parties) < 2 {
-		logger.Error("error parsing parties")
+		logger.Error("error parsing parties", "url", url)
 		return nil, fmt.Errorf("error parsing parties")
 	}
 
@@ -538,8 +538,8 @@ func numeroDigitoAnoUnificado(processID string) (string, error) {
 }
 
 // processeID input example: 0000001-02.2021.8.26.0054
-// foroNumeroUnificado output example: 0054. The last four digits of the processID
-func foroNumeroUnificado(processID string) (string, error) {
+// ForoNumeroUnificado output example: 0054. The last four digits of the processID
+func ForoNumeroUnificado(processID string) (string, error) {
 	regex := regexp.MustCompile(`(\d{7})-(\d{2}).(\d{4}).(\d{1}).(\d{2}).(\d{4})`)
 	matches := regex.FindStringSubmatch(processID)
 	if len(matches) == 0 {

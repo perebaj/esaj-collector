@@ -178,7 +178,7 @@ func showDoURL(processoCodigo, processoForo, processID string) string {
 // searchDoURL retrive the page that we need to access to get the processoCodigo.
 // - processID example: 1016358-63.2020.8.26.0053
 func searchDoURL(processID string) (string, error) {
-	foro, err := foroNumeroUnificado(processID)
+	foro, err := ForoNumeroUnificado(processID)
 	if err != nil {
 		return "", err
 	}

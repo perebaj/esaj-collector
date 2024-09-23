@@ -22,11 +22,11 @@ func Test_numeroDigitoAnoUnificado(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func Test_foroNumeroUnificado(t *testing.T) {
+func Test_ForoNumeroUnificado(t *testing.T) {
 	processID := "1029989-06.2022.8.26.0053"
 	want := "0053"
 
-	got, err := foroNumeroUnificado(processID)
+	got, err := ForoNumeroUnificado(processID)
 	require.NoError(t, err)
 
 	assert.Equal(t, want, got)
@@ -34,7 +34,7 @@ func Test_foroNumeroUnificado(t *testing.T) {
 
 // Passing a invalid body to the request response, this should return an error
 // saying that no matches were found.
-func Test_Client_SearchDo_ErrNoMatchesFound(t *testing.T) {
+func Test_Client_ProcessCodeByProcessID_ErrNoMatchesFound(t *testing.T) {
 	esajClient := New(Config{}, &http.Client{
 		Timeout: time.Second * 2,
 	})
@@ -57,11 +57,11 @@ func Test_Client_SearchDo_ErrNoMatchesFound(t *testing.T) {
 	esajClient.URL = server.URL
 
 	processID := "1029989-06.2022.8.26.0053"
-	_, err := esajClient.searchDo(processID)
+	_, err := esajClient.ProcessCodeByProcessID(processID)
 	require.Error(t, err)
 }
 
-func Test_Client_SearchDo(t *testing.T) {
+func Test_Client_ProcessCodeByProcessID(t *testing.T) {
 	esajClient := New(Config{}, &http.Client{
 		Timeout: time.Second * 2,
 	})
@@ -106,7 +106,7 @@ func Test_Client_SearchDo(t *testing.T) {
 	esajClient.URL = server.URL
 
 	processID := "1029989-06.2022.8.26.0053"
-	got, err := esajClient.searchDo(processID)
+	got, err := esajClient.ProcessCodeByProcessID(processID)
 	require.NoError(t, err)
 
 	wantProcessCode := "THISONE"
