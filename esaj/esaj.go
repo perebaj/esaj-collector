@@ -537,6 +537,7 @@ func numeroDigitoAnoUnificado(processID string) (string, error) {
 	return matches[1], nil
 }
 
+// ForoNumeroUnificado returns the last four digits of the processID.
 // processeID input example: 0000001-02.2021.8.26.0054
 // ForoNumeroUnificado output example: 0054. The last four digits of the processID
 func ForoNumeroUnificado(processID string) (string, error) {

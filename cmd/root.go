@@ -24,13 +24,13 @@ var collectCmd = &cobra.Command{
 	Use:   "collect",
 	Short: "Collect all data from ESAJ related to a specific OAB number or process",
 	Long:  `Collect all data from ESAJ related to a specific OAB number or process`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		oab, _ := cmd.Flags().GetString("oab")
 		processID, _ := cmd.Flags().GetString("process")
 		ctx := cmd.Context()
 		if oab == "" && processID == "" {
 			fmt.Println("Error: You must provide either an OAB number or a process ID")
-			cmd.Usage()
+			_ = cmd.Usage()
 			return
 		}
 

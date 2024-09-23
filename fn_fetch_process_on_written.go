@@ -49,8 +49,9 @@ func Parser(_ context.Context, event event.Event) error {
 
 	processID := doc["process_id"].GetStringValue()
 	traceID := doc["trace_id"].GetStringValue()
-	if processID == "" || traceID == "" {
-		return fmt.Errorf("process_id or trace_id is empty")
+	oab := doc["oab"].GetStringValue()
+	if processID == "" || traceID == "" || oab == "" {
+		return fmt.Errorf("process_id or trace_id or oab is empty")
 	}
 
 	logger := slog.With("trace_id", traceID)
